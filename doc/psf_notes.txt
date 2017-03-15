@@ -1,0 +1,23 @@
+Old work done by:
+Greg Green
+argonaut.skymaps.info
+
+Note: allow the PSF dictionary scale to be different from the pixel sampling scale.
+
+David will send locations on NERSC
+Image: .ooi-.fits.fz (not exactly sky-subtracted, but "constant sky")
+Weight = 1 / sigma^2 -oow-.fits
+Mask = ood.fits
+(Note "ok?" instead of "oo?" is also ok.)
+
+c4d_yymmdd_uttime.ooi_band_processingverion.fits
+
+Use stuff in the DR3.  The fz compression is for fits only.  It only compresses the data block, leaving the header block readable.
+
+Use "fpack" and "funpack".
+
+Each FITS file has one for each CCD in the image.
+
+GAIA: is combined with PSI (pan stars, you can ask Eddie and Aaron, which had multiple bands).  (GAIA had only one band.)
+
+
