@@ -1,0 +1,19 @@
+Raw images:
+/global/project/projectdirs/cosmo/staging/decam/DECam_Raw
+
+CP-processed images:
+/global/project/projectdirs/cosmo/staging/decam/DECam_CP
+
+Compression code:
+/global/common/edison/contrib/hpcosmo/hpcports_gnu-9.0/cfitsio-3.37_ef0bbcfa-9.0/bin/fpack
+/global/common/edison/contrib/hpcosmo/hpcports_gnu-9.0/cfitsio-3.37_ef0bbcfa-9.0/bin/funpack
+
+GAIA-PS1 combined catalog (astrometry from GAIA, photometry from PS1):
+export GAIA_DIR=/project/projectdirs/cosmo/work/gaia/chunks-ps1-gaia
+
+DR3 tractor reductions:
+/global/project/projectdirs/cosmo/data/legacysurvey/dr3/
+http://legacysurvey.org/dr3/description/
+
+First test image:
+CP20160225/c4d_160302_094418_oki_z_v1.fits.fz
