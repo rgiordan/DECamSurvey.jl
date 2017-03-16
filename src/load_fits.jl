@@ -30,10 +30,15 @@ im_header_string = FITSIO.read_header(f_image[im_ind], String);
 
 # Get the corners, confirm that WCS matches up with them.
 corners = [ [ im_header["COR$(i)RA1"], im_header["COR$(i)DEC1"]] for i in 1:4 ]
-wcs = WCS.from_header(im_header_string)[1]
-WCS.pix_to_world(wcs, Float64[1,1])
-WCS.pix_to_world(wcs, Float64[x for x in size(image)])
-corners
+center = [ im_header["CENRA1"], im_header["CENDEC1"]];
+wcs = WCS.from_header(im_header_string)[1];
+WCS.world_to_pix(wcs, corners[1])
+WCS.world_to_pix(wcs, corners[2])
+WCS.world_to_pix(wcs, corners[3])
+WCS.world_to_pix(wcs, corners[4])
+WCS.world_to_pix(wcs, center)
+size(image)
+
 
 # arcmin
 [x for x in asec_per_pixel] .* [x for x in size(image)] / 60
@@ -82,4 +87,30 @@ brick_row = get_ra_dec_brick(obj_loc[1], obj_loc[2], bricks)
 # ├─────┼────────────┼─────────┼────────┼────────┼─────────┼─────────┤
 # │ 1   │ "1984p110" │ 394182  │ 10.875 │ 11.125 │ 198.305 │ 198.559 │
 
+f_tractor = FITSIO.FITS(joinpath(data_path, "tractor-1984p110.fits"));
+FITSIO.read_header(f_tractor[2])
+catalog = DataFrame(objid=FITSIO.read(f_tractor[2], "objid"));
 
+for par in [ "type", "ra", "dec", "cpu_source", "decam_flux", "wise_flux"]
+    tab = FITSIO.read(f_tractor[2], par)
+    if ndims(tab) == 1
+        catalog[Symbol(par)] = tab
+    else
+        for row in 1:size(tab, 1)
+            catalog[Symbol(par * "$row")] = tab[row, :]
+        end
+    end
+end
+
+# I'm concerned wither pix_loc is in 0-indexed or 1-indexed coordinates.
+world_loc = Array(catalog[[:ra, :dec]]);
+pix_loc = WCS.world_to_pix(wcs, world_loc');
+catalog[:pix_h] = pix_loc[1, :];
+catalog[:pix_w] = pix_loc[2, :];
+
+image_rows = 1 .<= (catalog[:pix_h] .<= size(image, 1)) & (1 .<= catalog[:pix_w] .<= size(image, 2));
+bright_rows = catalog[:decam_flux5] .> 500;
+star_catalog = catalog[(catalog[:type] .== "PSF") & image_rows, :];
+
+matshow(log(get_trimmed_image(image, trim_quantile=1, num_sd=-Inf))); colorbar()
+plot(pix_loc[2, image_rows & bright_rows] - 1, pix_loc[1, image_rows & bright_rows] - 1, "ro")
