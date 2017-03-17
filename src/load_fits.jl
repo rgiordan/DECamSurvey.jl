@@ -79,6 +79,17 @@ function get_ra_dec_brick(ra, dec, bricks)
     return bricks[row, :]
 end
 
+function get_pixel_box(ra, dec, pixel_radius, wcs, image_size)
+    pix_loc = floor(WCS.world_to_pix(wcs, [ra, dec]))
+    pix_loc_h = Int(pix_loc[1])
+    pix_loc_w = Int(pix_loc[2])
+    pix_lower_h = max(1, pix_loc_h - pixel_radius)
+    pix_lower_w = max(1, pix_loc_w - pixel_radius)
+    pix_upper_h = min(image_size[1], pix_loc_h + pixel_radius)
+    pix_upper_w = min(image_size[2], pix_loc_w + pixel_radius)
+    return pix_lower_h:pix_upper_h, pix_lower_w:pix_upper_w
+end
+
 brick_row = get_ra_dec_brick(obj_loc[1], obj_loc[2], bricks)
 
 # Load the catalogs with the brick ids
@@ -89,9 +100,12 @@ brick_row = get_ra_dec_brick(obj_loc[1], obj_loc[2], bricks)
 
 f_tractor = FITSIO.FITS(joinpath(data_path, "tractor-1984p110.fits"));
 FITSIO.read_header(f_tractor[2])
-catalog = DataFrame(objid=FITSIO.read(f_tractor[2], "objid"));
 
-for par in [ "type", "ra", "dec", "cpu_source", "decam_flux", "wise_flux"]
+catalog = DataFrame(objid=FITSIO.read(f_tractor[2], "objid"));
+catalog_cols =
+    [ "type", "ra", "dec", "cpu_source", "decam_flux", "wise_flux",
+      "fracdev", "shapeexp_r", "shapedev_r" ]
+for par in catalog_cols
     tab = FITSIO.read(f_tractor[2], par)
     if ndims(tab) == 1
         catalog[Symbol(par)] = tab
@@ -101,23 +115,91 @@ for par in [ "type", "ra", "dec", "cpu_source", "decam_flux", "wise_flux"]
         end
     end
 end
-
-# I'm concerned wither pix_loc is in 0-indexed or 1-indexed coordinates.
-# It appears to be 1-indexed.
 world_loc = Array(catalog[[:ra, :dec]]);
 pix_loc = WCS.world_to_pix(wcs, world_loc');
 catalog[:pix_h] = pix_loc[1, :];
 catalog[:pix_w] = pix_loc[2, :];
-
 image_rows = 1 .<= (catalog[:pix_h] .<= size(image, 1)) & (1 .<= catalog[:pix_w] .<= size(image, 2));
+catalog = catalog[image_rows, :]
+
 bright_rows = catalog[:decam_flux5] .> 500;
-star_catalog = catalog[(catalog[:type] .== "PSF") & image_rows, :];
+star_rows = catalog[:type] .== "PSF";
+
+# look at galaxies where we don't know whether they're exp or dev
+catalog[ (catalog[:type] .!= "PSF") & (0 .< catalog[:fracdev] .< 1),
+         [:type, :ra, :dec, :decam_flux5, :fracdev, :shapeexp_r, :shapedev_r]]
+
+# look at galaxies
+sort!(catalog, cols = [:shapeexp_r])
+catalog[ !star_rows,
+         [:type, :ra, :dec, :pix_h, :pix_w, :decam_flux5, :fracdev, :shapeexp_r, :shapedev_r]]
+
+function RowsCloseTo(ra, dec, catalog, pix_radius)
+    pix_loc = WCS.world_to_pix(wcs, [ra, dec])
+    return (
+        (pix_loc[1] - pix_radius .< catalog[:pix_h] .< pix_loc[1] + pix_radius) &
+        (pix_loc[2] - pix_radius .< catalog[:pix_w] .< pix_loc[2] + pix_radius))
+end
+
+row_num = 346
+world_loc = Array(catalog[!star_rows, :][row_num, [:ra, :dec]])[:]
+ra, dec = world_loc[1], world_loc[2]
+catalog[RowsCloseTo(ra, dec, catalog, 10), :]
+pix_loc = WCS.world_to_pix(wcs, [ra, dec])
+hrange, wrange = get_pixel_box(ra, dec, 40, wcs, size(image))
+matshow(image[hrange, wrange])
+plot(pix_loc[1] - minimum(hrange) + 1, pix_loc[2] - minimum(wrange) + 1, "bo")
+
+
+hrange, wrange = get_pixel_box(ra, dec, 40, wcs, size(image))
+matshow(image[hrange, wrange])
+
+# I'm concerned wither pix_loc is in 0-indexed or 1-indexed coordinates.
+# It appears to be 1-indexed.
 
 matshow(log(get_trimmed_image(image, trim_quantile=1, num_sd=-Inf))); colorbar()
-plot(pix_loc[2, image_rows & bright_rows] - 1, pix_loc[1, image_rows & bright_rows] - 1, "ro")
+plot(pix_loc[2, image_rows & bright_rows] - 1, pix_loc[1, bright_rows] - 1, "ro")
 
-
+# Gaia.  What is the meaning of the chunk numbers?
 f_gaia = FITSIO.FITS(joinpath(data_path, "chunk-00001.fits"));
 gaia_ra = FITSIO.read(f_gaia[2], "ra");
 gaia_dec = FITSIO.read(f_gaia[2], "dec");
 plot(gaia_ra, gaia_dec, "bo")
+
+PyPlot.close("all")
+
+# First pass
+
+# NaN out pixels that are near galaxies.
+gal_catalog = catalog[!star_rows, :];
+filter_image = deepcopy(image);
+for row in 1:nrow(gal_catalog)
+    ra = gal_catalog[row, :ra]
+    dec = gal_catalog[row, :dec]
+    radius = Int(ceil(8 * max(gal_catalog[row, :shapeexp_r], gal_catalog[row, :shapedev_r])))
+    radius = max(radius, 3)
+    h_range, w_range = get_pixel_box(ra, dec, radius, wcs, size(image))
+    filter_image[h_range, w_range] = NaN
+end
+
+# Define star ranges.
+type PixelRange
+    objid::Int32
+    h_range::UnitRange{Int64}
+    w_range::UnitRange{Int64}
+end
+
+star_catalog = catalog[star_rows & (catalog[:decam_flux5] .> 50), :];
+pixel_ranges = PixelRange[]
+for row in 1:nrow(star_catalog)
+    ra = star_catalog[row, :ra]
+    dec = star_catalog[row, :dec]
+    objid = star_catalog[row, :objid]
+    h_range, w_range = get_pixel_box(ra, dec, 20, wcs, size(image))
+    push!(pixel_ranges, PixelRange(objid, h_range, w_range))
+end
+
+star_image = fill(NaN, size(image));
+for pr in pixel_ranges
+    star_image[pr.h_range, pr.w_range] = image[pr.h_range, pr.w_range]
+end
