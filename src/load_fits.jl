@@ -203,3 +203,23 @@ star_image = fill(NaN, size(image));
 for pr in pixel_ranges
     star_image[pr.h_range, pr.w_range] = image[pr.h_range, pr.w_range]
 end
+
+function render_star_at_point(pix_loc::Vector{Float64}, pix_center::Vector{Float64})
+    radius_pix = 5.0
+    r = pix_loc - pix_center
+    return exp(-0.5 * dot(r, r) / (radius_pix ^ 2))
+end
+render_star_at_point([5., 6.], [3., 2.])
+
+rendered_image = fill(NaN, size(image));
+for pr in pixel_ranges
+    row = findfirst(star_catalog[:objid] .== pr.objid)
+    pix_center = Array(star_catalog[row, [:pix_h, :pix_w]])[:]
+    for h in pr.h_range, w in pr.w_range
+        if (isnan(star_image[h, w])) continue end
+        if (isnan(rendered_image[h, w])) rendered_image[h, w] = 0. end
+        rendered_image[h, w] += render_star_at_point(Float64[h, w], pix_center)
+    end
+end
+
+matshow(star_image - rendered_image)
