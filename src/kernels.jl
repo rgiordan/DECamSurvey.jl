@@ -85,16 +85,24 @@ function cubic_kernel{NumType <: Number}(x::NumType, a::Float64)
 end
 
 
-
-function add_interpolation_to_image!{NumType <: Number}(
+# function add_interpolation_to_image!{NumType <: Number}(
+#         kernel, # A 1-d kernel function
+#         kernel_width::Int, # The width of the non-zero part of the kernel
+#         image::Matrix{NumType},
+#         psf_image::Matrix{Float64},
+#         h_range::UnitRange{Int64}, # h range in the image
+#         w_range::UnitRange{Int64}, # w range in the image
+#         object_loc::Vector{NumType},
+#         brightness::NumType)
+function add_interpolation_to_image!(
         kernel, # A 1-d kernel function
         kernel_width::Int, # The width of the non-zero part of the kernel
-        image::Matrix{NumType},
-        psf_image::Matrix{Float64},
+        image,
+        psf_image,
         h_range::UnitRange{Int64}, # h range in the image
         w_range::UnitRange{Int64}, # w range in the image
-        object_loc::Vector{NumType},
-        brightness::NumType)
+        object_loc::Vector{Float64},
+        brightness)
 
     h_psf_width = (size(psf_image, 1) + 1) / 2.0
     w_psf_width = (size(psf_image, 2) + 1) / 2.0
