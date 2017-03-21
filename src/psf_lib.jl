@@ -44,3 +44,59 @@ type PixelRange
     h_range::UnitRange{Int64}
     w_range::UnitRange{Int64}
 end
+
+
+
+"""
+Convert an (n - 1)-vector of real numbers to an n-vector on the simplex, where
+the last entry implicitly has the untransformed value 1.
+"""
+function constrain_to_simplex(x)
+    m = maximum(x)
+    k = length(x) + 1
+    @assert m < Inf
+    z = similar(x, k)
+    z[1:(k - 1)] = exp.(x .- m)
+    z[k] = exp(-m)
+    z = z / sum(z)
+    return z
+end
+
+
+"""
+Convert an n-vector on the simplex to an (n - 1)-vector in R^{n -1}.  Entries
+are expressed relative to the last element.
+"""
+function unconstrain_simplex(z)
+    n = length(z)
+    [ log(z[i]) - log(z[n]) for i = 1:(n - 1)]
+end
+
+
+function simplexify_parameter(free_param, lb::Float64, scale::Float64)
+    # Broadcasting doesn't work with DualNumbers and Floats. :(
+    # z_sim is on an unconstrained simplex.
+    n = length(free_param) + 1
+    z_sim = constrain_to_simplex([ p / scale for p in free_param ])
+    param = [ (1 - n * lb) * p + lb for p in z_sim ]
+
+    param
+end
+
+
+"""
+Invert the transformation simplexify_parameter() by converting an n-vector
+on a simplex to R^{n - 1}.
+"""
+function unsimplexify_parameter(param, lb::Float64, scale::Float64)
+    n = length(param)
+    @assert all(param .>= lb)
+    @assert(abs(sum(param) - 1) < 1e-14, abs(sum(param) - 1))
+
+    # z_sim is on an unconstrained simplex.
+    # Broadcasting doesn't work with DualNumbers and Floats. :(
+    z_sim = [ (p - lb) / (1 - n * lb) for p in param ]
+    free_param = [ p * scale for p in unconstrain_simplex(z_sim) ]
+
+    free_param
+end

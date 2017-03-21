@@ -52,7 +52,7 @@ bricks = DataFrame(
     ra1=FITSIO.read(f_bricks[2], "ra1"),
     ra2=FITSIO.read(f_bricks[2], "ra2"));
 
-brick_row = get_ra_dec_brick(obj_loc[1], obj_loc[2], bricks);
+# brick_row = get_ra_dec_brick(obj_loc[1], obj_loc[2], bricks);
 
 # Load the catalogs with the brick ids
 # http://legacysurvey.org/dr3/catalogs/
@@ -61,7 +61,7 @@ brick_row = get_ra_dec_brick(obj_loc[1], obj_loc[2], bricks);
 # │ 1   │ "1984p110" │ 394182  │ 10.875 │ 11.125 │ 198.305 │ 198.559 │
 
 f_tractor = FITSIO.FITS(joinpath(data_path, "tractor-1984p110.fits"));
-tractor_header = FITSIO.read_header(f_tractor[2])
+tractor_header = FITSIO.read_header(f_tractor[2]);
 
 catalog = load_catalog(f_tractor, wcs, size(image));
 star_rows = catalog[:type] .== "PSF";
@@ -102,16 +102,16 @@ function gaussian_at_point(pix_loc::Vector{Float64},
     return exp(-0.5 * dot(r, r) / (radius_pix ^ 2))
 end
 
-psf_image = fill(0.0, (50, 50));
+psf_image_orig = fill(0.0, (50, 50));
 psf_radius = 1.5
-psf_center = 0.5 * Float64[size(psf_image, 1) + 1, size(psf_image, 2) + 1];
-for h in 1:size(psf_image, 1), w in 1:size(psf_image, 2)
-    psf_image[h, w] = gaussian_at_point(Float64[h, w], psf_center, psf_radius)
+psf_center = 0.5 * Float64[size(psf_image_orig, 1) + 1, size(psf_image_orig, 2) + 1];
+for h in 1:size(psf_image_orig, 1), w in 1:size(psf_image_orig, 2)
+    psf_image_orig[h, w] = gaussian_at_point(Float64[h, w], psf_center, psf_radius)
 end
-psf_image = psf_image / sum(psf_image);
+psf_image_orig = psf_image_orig / sum(psf_image_orig);
+psf_image = deepcopy(psf_image_orig);
 
 rendered_image = fill(NaN, size(image));
-
 function render_image!(rendered_image, psf_image, scale)
     rendered_image[:] = NaN
     for pr in pixel_ranges
@@ -166,18 +166,32 @@ end
 #################################
 # Autodiff
 
+# Set a lower bound and make sure the psf is greater than the lower bound
+# but still normalized.
+psf_lb = 1e-10
+n = prod(size(psf_image_orig))
+psf_image = psf_image_orig * (1 - 2 * psf_lb * n) + 2 * psf_lb;
+
+# Get a permutation that sets the middle of the PSF to be the last index,
+# since that's the one that's set to zero in the unconstrained simplex encoding.
+psf_center = (Int(floor(0.5 * size(psf_image, 1) + 1)),
+              Int(floor(0.5 * size(psf_image, 2) + 1)))
+psf_center_ind = sub2ind(size(psf_image),psf_center...)
+psf_inds = setdiff(1:length(psf_image), psf_center_ind);
+push!(psf_inds, psf_center_ind);
+
 function encode_params(psf_image, scale)
     par = fill(NaN, length(psf_image) + 1)
 
     offset = 0
-    par[offset + (1:length(psf_image))] = psf_image[:]
-    offset += length(psf_image)
+    psf_free = unsimplexify_parameter(psf_image[psf_inds], psf_lb, 1.0);
+    par[offset + (1:length(psf_free))] = psf_free
+    offset += length(psf_free)
 
     par[offset + 1] = log(scale)
 
     return par
 end
-
 
 function decode_params(par)
     psf_size = length(par) - 1
@@ -187,8 +201,12 @@ function decode_params(par)
     @assert abs(psf_dim - sqrt(psf_size)) < 1e-16
 
     offset = 0
-    psf_image = reshape(par[offset + (1:psf_size)], psf_dim, psf_dim)
-    offset += psf_size
+    psf_free = par[offset + (1:(psf_size - 1))]
+    offset += psf_size - 1
+
+    psf_vec = simplexify_parameter(psf_free, psf_lb, 1.0);
+    ipermute!(psf_vec, psf_inds);
+    psf_image = reshape(psf_vec, (psf_dim, psf_dim));
 
     scale = exp(par[offset + 1])
 
@@ -228,7 +246,9 @@ end
 scale = 1000.0
 
 par = encode_params(psf_image, scale);
-decode_params(par);
+psf_image_test, scale_test = decode_params(par);
+@assert maximum(abs(psf_image - psf_image_test)) < 1e-12
+@assert abs(scale - scale_test) < 1e-12
 objective_wrap(par);
 
 objective_wrap_tape = GradientTape(objective_wrap, par);
@@ -238,3 +258,7 @@ results = (similar(par));
 # gradient!(results, compiled_objective_wrap_tape, par)
 gradient!(results, objective_wrap_tape, par);
 maximum(abs(results))
+
+epsilon = 1e-8
+psf_image_eps, scale_eps = decode_params(par + epsilon * results);
+matshow(psf_image_eps - psf_image); colorbar()
