@@ -47,7 +47,8 @@ size(image)
 
 function get_trimmed_image(image; trim_quantile=0.9999, num_sd=2)
     trim_level = quantile(image[ !isnan(image[:]) ][:], trim_quantile)
-    noise_level = median(image[ !isnan(image[:]) ][:]) + num_sd * std(image[!isnan(image)])
+    noise_level =
+        median(image[ !isnan(image[:]) ][:]) + num_sd * std(image[!isnan(image)])
     image_trim = deepcopy(image);
     image_trim[image_trim .> trim_level] = trim_level;
     image_trim[image_trim .< noise_level] = 0

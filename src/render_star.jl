@@ -5,6 +5,41 @@ using DataFrames
 using ReverseDiff: GradientTape, GradientConfig, gradient, gradient!, compile
 using Optim
 
+using RCall
+R"""
+library(ggplot2)
+library(gridExtra)
+library(reshape2)
+library(dplyr)
+
+PlotMatrix <- function(image) {
+    img_melt <- melt(image)
+    ggplot(img_melt, aes(x=Var1, y=Var2, fill=value)) +
+        geom_raster() + scale_fill_gradient2(midpoint=0)
+}
+
+PlotRaster <- function(img_melt) {
+    ggplot(img_melt, aes(x=h, y=w, fill=val)) +
+        geom_raster() + scale_fill_gradient2(midpoint=0)
+}
+"""
+
+# Make a melted data table
+function melt_image(image, pixel_ranges)
+    # Just to get it started
+    df = DataFrame(h=1, w=1, h0=0, w0=0, objid=Int32(0), val=0.0)
+    for pr in pixel_ranges, h in pr.h_range, w in pr.w_range
+        h0 = minimum(pr.h_range)
+        w0 = minimum(pr.w_range)
+        objid = pr.objid
+        if (isnan(image[h, w])) continue end
+        append!(df, DataFrame(h=h, w=w, h0=h0, w0=w0, objid=objid,
+                              val=Float64(image[h, w])))
+    end
+    df = df[2:end, :]
+    return df
+end
+
 data_path = joinpath(ENV["GIT_REPO_LOC"], "DECamSurvey.jl", "dat")
 src_path = joinpath(ENV["GIT_REPO_LOC"], "DECamSurvey.jl", "src")
 include(joinpath(src_path, "psf_lib.jl"))
@@ -31,40 +66,18 @@ mask = FITSIO.read(f_mask[im_ind]);
 image[mask .== 1] = NaN
 
 im_header = FITSIO.read_header(f_image[im_ind]);
-im_header_string = FITSIO.read_header(f_image[im_ind], String);
-gaina = im_header["GAINA"]
-gainb = im_header["GAINB"]
+wcs = WCS.from_header(FITSIO.read_header(f_image[im_ind], String))[1];
 
-# Get the corners, confirm that WCS matches up with them.
-wcs = WCS.from_header(im_header_string)[1];
+bricknames = get_bricknames_for_image(
+    joinpath(data_path, "survey-bricks.fits"), im_header);
+catalog_vec = [ load_brickname(brickname, wcs, image) for brickname in bricknames ];
+catalog = reduce(vcat, catalog_vec);
 
-# Get the brick ids here
-# http://legacysurvey.org/dr3/files/
-# It appears that bricks are RA, DEC rectangles.
-# survey-bricks.fits.gz
-f_bricks = FITSIO.FITS(joinpath(data_path, "survey-bricks.fits"))
-FITSIO.read_header(f_bricks[2]);
-f_bricks[2]
-bricks = DataFrame(
-    brickname=FITSIO.read(f_bricks[2], "brickname"),
-    brickid=FITSIO.read(f_bricks[2], "brickid"),
-    dec1=FITSIO.read(f_bricks[2], "dec1"),
-    dec2=FITSIO.read(f_bricks[2], "dec2"),
-    ra1=FITSIO.read(f_bricks[2], "ra1"),
-    ra2=FITSIO.read(f_bricks[2], "ra2"));
 
-# brick_row = get_ra_dec_brick(obj_loc[1], obj_loc[2], bricks);
 
-# Load the catalogs with the brick ids
-# http://legacysurvey.org/dr3/catalogs/
-# │ Row │ brickname  │ brickid │ dec1   │ dec2   │ ra1     │ ra2     │
-# ├─────┼────────────┼─────────┼────────┼────────┼─────────┼─────────┤
-# │ 1   │ "1984p110" │ 394182  │ 10.875 │ 11.125 │ 198.305 │ 198.559 │
+###################
+# Get pixels that we're going to process
 
-f_tractor = FITSIO.FITS(joinpath(data_path, "tractor-1984p110.fits"));
-tractor_header = FITSIO.read_header(f_tractor[2]);
-
-catalog = load_catalog(f_tractor, wcs, size(image));
 star_rows = catalog[:type] .== "PSF";
 
 # NaN out pixels that are near galaxies.
@@ -80,8 +93,8 @@ for row in 1:nrow(gal_catalog)
     filter_image[h_range, w_range] = NaN
 end
 
-
-star_catalog = catalog[star_rows & (catalog[:decam_flux5] .> 50), :];
+# Choose stars of a minimum brighntess
+star_catalog = catalog[star_rows & (catalog[:decam_flux5] .> 300), :];
 pixel_ranges = PixelRange[]
 for row in 1:nrow(star_catalog)
     ra = star_catalog[row, :ra]
@@ -96,13 +109,18 @@ for pr in pixel_ranges
     star_image[pr.h_range, pr.w_range] = image[pr.h_range, pr.w_range]
 end
 
-function gaussian_at_point(pix_loc::Vector{Float64},
-                           pix_center::Vector{Float64},
-                           radius_pix::Float64)
-    r = pix_loc - pix_center
-    return exp(-0.5 * dot(r, r) / (radius_pix ^ 2))
+star_locs = reduce(vcat,
+    [ DataFrame(objid=pr.objid, h0=minimum(pr.h_range),
+    w0=minimum(pr.w_range)) for pr in pixel_ranges]);
+# Show the star locations
+if false
+    @rput star_locs
+    R"""
+    ggplot(star_locs) + geom_point(aes(x=h0, y=w0), size=3, color="red")
+    """
 end
 
+# Make an initial PSF guess
 psf_image_orig = fill(0.0, (12, 12));
 psf_radius = 1.5
 psf_center = 0.5 * Float64[size(psf_image_orig, 1) + 1, size(psf_image_orig, 2) + 1];
@@ -113,55 +131,6 @@ psf_image_orig = psf_image_orig / sum(psf_image_orig);
 psf_image = deepcopy(psf_image_orig);
 
 rendered_image = fill(NaN, size(image));
-function render_image!(rendered_image, psf_image, scale)
-    rendered_image[:] = NaN
-    for pr in pixel_ranges
-        row = findfirst(star_catalog[:objid] .== pr.objid)
-        object_loc = Array(star_catalog[row, [:pix_h, :pix_w]])[:]
-        object_brightness = star_catalog[row, :decam_flux5] * scale
-
-        # Just a guess
-        #object_brightness *= im_header["SATURATA"]
-
-        # Another guess
-        # object_brightness *= header["MAGZERO"]
-
-        kernel_width = 3.0
-        for h in pr.h_range, w in pr.w_range
-            if isnan(rendered_image[h, w])
-                rendered_image[h, w] = 0.0
-            end
-        end
-        add_interpolation_to_image!(
-            x -> cubic_kernel(x, kernel_width),
-            Int(kernel_width),
-            rendered_image,
-            psf_image,
-            pr.h_range,
-            pr.w_range,
-            object_loc,
-            object_brightness)
-    end
-    rendered_image += im_header["AVSKY"];
-
-    return true
-end
-
-
-
-if false
-    render_image!(rendered_image, psf_image, 1000.0)
-    PyPlot.close("all")
-    plot(star_image[:], rendered_image[:], "k.")
-    plot(maximum(star_image), maximum(star_image), "ro")
-
-    PyPlot.close("all")
-    matshow(rendered_image); colorbar(); title("rendered")
-    matshow(star_image); colorbar(); title("image")
-
-    PyPlot.close("all")
-    matshow(star_image - rendered_image); colorbar(); title("residual")
-end
 
 
 #################################
@@ -218,11 +187,10 @@ end
 image_diff = similar(star_image);
 active_pixel_indices = find(!isnan(star_image));
 function objective(psf_image, scale)
-    # rendered_image = fill(NaN, size(image));
     rendered_image = similar(psf_image, size(star_image));
-    # rendered_image = similar(psf_image, (5, 5));
     rendered_image[:] = NaN
-    render_image!(rendered_image, psf_image, scale)
+    render_image!(rendered_image, psf_image, scale,
+                  pixel_ranges, star_catalog, im_header)
     image_diff = rendered_image - star_image
     result = 0.
     for pix_ind in active_pixel_indices
@@ -241,7 +209,7 @@ function objective_wrap(par)
 end
 
 
-scale = 1000.0
+scale = 617.0
 
 par = encode_params(psf_image, scale);
 psf_image_test, scale_test = decode_params(par);
@@ -250,13 +218,13 @@ psf_image_test, scale_test = decode_params(par);
 objective_wrap(par);
 
 objective_wrap_tape = GradientTape(objective_wrap, par);
-objective_wrap_hess_tape = ReverseDiff.HessianTape(objective_wrap, par);
-# compiled_objective_wrap_tape = compile(objective_wrap_tape)
 
 results = (similar(par));
 gradient!(results, objective_wrap_tape, par);
 
 # Doesn't work:
+# objective_wrap_hess_tape = ReverseDiff.HessianTape(objective_wrap, par);
+# compiled_objective_wrap_tape = compile(objective_wrap_tape)
 # hess_results = similar(par, (length(par), length(par)));
 # ReverseDiff.hessian!(hess_results, objective_wrap_hess_tape, par);
 # ReverseDiff.hessian(objective_wrap_hess_tape, par);
@@ -276,31 +244,22 @@ end
 
 optim_res = Optim.optimize(
     objective_wrap, objective_grad!, par, LBFGS(),
-    Optim.Options(f_tol=1e-12, iterations=100,
+    Optim.Options(f_tol=1e-12, iterations=200,
     store_trace = true, show_trace = true))
 
 psf_image_opt, scale_opt = decode_params(optim_res.minimizer);
 
+
+###########################
+# Look at results
+
 rendered_image = similar(psf_image_opt, size(star_image));
 rendered_image[:] = NaN
-render_image!(rendered_image, psf_image_opt, scale_opt);
+render_image!(rendered_image, psf_image_opt, scale_opt,
+              pixel_ranges, star_catalog, im_header);
 image_diff = rendered_image - star_image;
-if false matshow(image_diff) end
-
 
 ind = 0
-
-# PyPlot.close("all")
-ind = ind + 1
-pr = pixel_ranges[ind]
-
-
-
-
-using RCall
-R"""
-library(ggplot2)
-"""
 
 ind = ind + 1
 pr = pixel_ranges[ind]
@@ -311,31 +270,67 @@ w_range = pr.w_range;
 @rput h_range;
 @rput w_range;
 @rput ind;
-
+row = findfirst(star_catalog[:objid] .== pr.objid);
+object_brightness = star_catalog[row, :decam_flux5]
+@rput object_brightness
 
 R"""
-img_melt <- melt(image_diff[h_range, w_range])
-ggplot(img_melt, aes(x=Var1, y=Var2, fill=value)) +
-    geom_raster() + scale_fill_gradient2(midpoint=0) +
-    ggtitle(ind)
+PlotMatrix(image_diff[h_range, w_range]) +
+    ggtitle(paste(ind, object_brightness, sep=": "))
 """
 
-#
-# R"""
-# library(ggplot2)
-# library(gridExtra)
-# library(reshape2)
-#
-# grid.arrange(
-#     ggplot(melt(raw_image), aes(Var1, Var2, value)) + geom_raster(),
-#     ggplot(melt(raw_image), aes(Var1, Var2, value)) + geom_raster(),
-#     ncol=2)
-# """
 
 
 
+ind = 18
+pr = pixel_ranges[ind]
+@rput image_diff;
+@rput image;
+@rput rendered_image;
+h_range = pr.h_range;
+w_range = pr.w_range;
+@rput h_range;
+@rput w_range;
+@rput ind;
+row = findfirst(star_catalog[:objid] .== pr.objid);
+object_brightness = star_catalog[row, :decam_flux5]
+@rput object_brightness
+
+R"""
+grid.arrange(
+PlotMatrix(image[h_range, w_range]) +
+    ggtitle(paste(ind, object_brightness, sep=": "))
+,
+PlotMatrix(rendered_image[h_range, w_range]) +
+    ggtitle(paste(ind, object_brightness, sep=": "))
+,
+PlotMatrix(image_diff[h_range, w_range]) +
+    ggtitle(paste(ind, object_brightness, sep=": "))
+, ncol=3)
+"""
 
 
+image_melt = melt_image(image, pixel_ranges);
+@rput image_melt;
+
+image_diff_melt = melt_image(image_diff, pixel_ranges);
+@rput image_diff_melt;
+
+objids = [pr.objid for pr in pixel_ranges ];
+h0 = [minimum(pr.h_range) for pr in pixel_ranges ];
+w0 = [minimum(pr.w_range) for pr in pixel_ranges ];
+w_perm = sortperm(w0)
+
+ind = 0
+
+ind = ind + 1
+this_objid = objids[w_perm[ind]]
+@rput this_objid
+
+R"""
+PlotRaster(filter(image_diff_melt, objid==this_objid)) +
+    ggtitle(sprintf("objid=%d", this_objid))
+"""
 
 
 

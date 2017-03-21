@@ -33,9 +33,81 @@ function load_catalog(f_tractor::FITSIO.FITS, wcs::WCS.WCSTransform, image_size:
     pix_loc = WCS.world_to_pix(wcs, world_loc');
     catalog[:pix_h] = pix_loc[1, :];
     catalog[:pix_w] = pix_loc[2, :];
-    image_rows = 1 .<= (catalog[:pix_h] .<= size(image, 1)) & (1 .<= catalog[:pix_w] .<= size(image, 2));
+    image_rows = (1 .<= catalog[:pix_h] .<= size(image, 1)) &
+                 (1 .<= catalog[:pix_w] .<= size(image, 2));
     catalog = catalog[image_rows, :]
     return catalog
+end
+
+# Get the brick ids here
+# http://legacysurvey.org/dr3/files/
+# It appears that bricks are RA, DEC rectangles.
+# survey-bricks.fits.gz
+function get_bricknames_for_image(brick_filename, im_header)
+    f_bricks = FITSIO.FITS(brick_filename)
+    bricks = DataFrame(
+        brickname=FITSIO.read(f_bricks[2], "brickname"),
+        brickid=FITSIO.read(f_bricks[2], "brickid"),
+        dec1=FITSIO.read(f_bricks[2], "dec1"),
+        dec2=FITSIO.read(f_bricks[2], "dec2"),
+        ra1=FITSIO.read(f_bricks[2], "ra1"),
+        ra2=FITSIO.read(f_bricks[2], "ra2"));
+    close(f_bricks)
+    ra_corners = [ im_header["COR$(i)RA1"] for i in 1:4 ];
+    dec_corners = [ im_header["COR$(i)DEC1"] for i in 1:4 ];
+    ra_min = minimum(ra_corners)
+    ra_max = maximum(ra_corners)
+    dec_min = minimum(dec_corners)
+    dec_max = maximum(dec_corners)
+    brick_rows =
+        (ra_min .< bricks[:ra2]) & (bricks[:ra1] .< ra_max) &
+        (dec_min .< bricks[:dec2]) & (bricks[:dec1] .< dec_max)
+    bricknames = bricks[brick_rows, :brickname]
+    return bricknames
+end
+
+function load_brickname(brickname, wcs, image)
+    tractor_fname = "tractor-$(brickname).fits"
+    f_tractor = FITSIO.FITS(joinpath(data_path, tractor_fname));
+    tractor_header = FITSIO.read_header(f_tractor[2]);
+    return load_catalog(f_tractor, wcs, size(image));
+end
+
+
+function gaussian_at_point(pix_loc::Vector{Float64},
+                           pix_center::Vector{Float64},
+                           radius_pix::Float64)
+    r = pix_loc - pix_center
+    return exp(-0.5 * dot(r, r) / (radius_pix ^ 2))
+end
+
+
+function render_image!(rendered_image, psf_image, scale,
+                       pixel_ranges, star_catalog, im_header)
+    rendered_image[:] = NaN
+    for pr in pixel_ranges
+        row = findfirst(star_catalog[:objid] .== pr.objid)
+        object_loc = Array(star_catalog[row, [:pix_h, :pix_w]])[:]
+        object_brightness = star_catalog[row, :decam_flux5] * scale
+
+        kernel_width = 2.0
+        for h in pr.h_range, w in pr.w_range
+            if isnan(rendered_image[h, w])
+                rendered_image[h, w] = im_header["AVSKY"]
+            end
+        end
+        add_interpolation_to_image!(
+            x -> cubic_kernel(x, kernel_width),
+            Int(kernel_width),
+            rendered_image,
+            psf_image,
+            pr.h_range,
+            pr.w_range,
+            object_loc,
+            object_brightness)
+    end
+
+    return true
 end
 
 # Define star ranges.
@@ -44,7 +116,6 @@ type PixelRange
     h_range::UnitRange{Int64}
     w_range::UnitRange{Int64}
 end
-
 
 
 """
