@@ -1,8 +1,9 @@
 import FITSIO
 import WCS
-using PyPlot
+#using PyPlot
 using DataFrames
 using ReverseDiff: GradientTape, GradientConfig, gradient, gradient!, compile
+using Optim
 
 data_path = joinpath(ENV["GIT_REPO_LOC"], "DECamSurvey.jl", "dat")
 src_path = joinpath(ENV["GIT_REPO_LOC"], "DECamSurvey.jl", "src")
@@ -86,7 +87,7 @@ for row in 1:nrow(star_catalog)
     ra = star_catalog[row, :ra]
     dec = star_catalog[row, :dec]
     objid = star_catalog[row, :objid]
-    h_range, w_range = get_pixel_box(ra, dec, 20, wcs, size(image))
+    h_range, w_range = get_pixel_box(ra, dec, 10, wcs, size(image))
     push!(pixel_ranges, PixelRange(objid, h_range, w_range))
 end
 
@@ -102,7 +103,7 @@ function gaussian_at_point(pix_loc::Vector{Float64},
     return exp(-0.5 * dot(r, r) / (radius_pix ^ 2))
 end
 
-psf_image_orig = fill(0.0, (50, 50));
+psf_image_orig = fill(0.0, (12, 12));
 psf_radius = 1.5
 psf_center = 0.5 * Float64[size(psf_image_orig, 1) + 1, size(psf_image_orig, 2) + 1];
 for h in 1:size(psf_image_orig, 1), w in 1:size(psf_image_orig, 2)
@@ -217,12 +218,9 @@ end
 image_diff = similar(star_image);
 active_pixel_indices = find(!isnan(star_image));
 function objective(psf_image, scale)
-    println("ok")
     # rendered_image = fill(NaN, size(image));
     rendered_image = similar(psf_image, size(star_image));
     # rendered_image = similar(psf_image, (5, 5));
-    println(typeof(psf_image))
-    println(typeof(rendered_image))
     rendered_image[:] = NaN
     render_image!(rendered_image, psf_image, scale)
     image_diff = rendered_image - star_image
@@ -252,13 +250,95 @@ psf_image_test, scale_test = decode_params(par);
 objective_wrap(par);
 
 objective_wrap_tape = GradientTape(objective_wrap, par);
+objective_wrap_hess_tape = ReverseDiff.HessianTape(objective_wrap, par);
 # compiled_objective_wrap_tape = compile(objective_wrap_tape)
 
 results = (similar(par));
-# gradient!(results, compiled_objective_wrap_tape, par)
 gradient!(results, objective_wrap_tape, par);
+
+# Doesn't work:
+# hess_results = similar(par, (length(par), length(par)));
+# ReverseDiff.hessian!(hess_results, objective_wrap_hess_tape, par);
+# ReverseDiff.hessian(objective_wrap_hess_tape, par);
+
+
+function objective_grad!(par, results)
+    gradient!(results, objective_wrap_tape, par)
+end
+objective_grad!(par, results);
 maximum(abs(results))
 
 epsilon = 1e-8
 psf_image_eps, scale_eps = decode_params(par + epsilon * results);
-matshow(psf_image_eps - psf_image); colorbar()
+if false
+    matshow(psf_image_eps - psf_image); colorbar()
+end
+
+optim_res = Optim.optimize(
+    objective_wrap, objective_grad!, par, LBFGS(),
+    Optim.Options(f_tol=1e-12, iterations=100,
+    store_trace = true, show_trace = true))
+
+psf_image_opt, scale_opt = decode_params(optim_res.minimizer);
+
+rendered_image = similar(psf_image_opt, size(star_image));
+rendered_image[:] = NaN
+render_image!(rendered_image, psf_image_opt, scale_opt);
+image_diff = rendered_image - star_image;
+if false matshow(image_diff) end
+
+
+ind = 0
+
+# PyPlot.close("all")
+ind = ind + 1
+pr = pixel_ranges[ind]
+
+
+
+
+using RCall
+R"""
+library(ggplot2)
+"""
+
+ind = ind + 1
+pr = pixel_ranges[ind]
+
+@rput image_diff;
+h_range = pr.h_range;
+w_range = pr.w_range;
+@rput h_range;
+@rput w_range;
+@rput ind;
+
+
+R"""
+img_melt <- melt(image_diff[h_range, w_range])
+ggplot(img_melt, aes(x=Var1, y=Var2, fill=value)) +
+    geom_raster() + scale_fill_gradient2(midpoint=0) +
+    ggtitle(ind)
+"""
+
+#
+# R"""
+# library(ggplot2)
+# library(gridExtra)
+# library(reshape2)
+#
+# grid.arrange(
+#     ggplot(melt(raw_image), aes(Var1, Var2, value)) + geom_raster(),
+#     ggplot(melt(raw_image), aes(Var1, Var2, value)) + geom_raster(),
+#     ncol=2)
+# """
+
+
+
+
+
+
+
+
+
+
+#
