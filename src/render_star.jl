@@ -229,7 +229,6 @@ gradient!(results, objective_wrap_tape, par);
 # ReverseDiff.hessian!(hess_results, objective_wrap_hess_tape, par);
 # ReverseDiff.hessian(objective_wrap_hess_tape, par);
 
-
 function objective_grad!(par, results)
     gradient!(results, objective_wrap_tape, par)
 end
@@ -272,11 +271,24 @@ w_range = pr.w_range;
 @rput ind;
 row = findfirst(star_catalog[:objid] .== pr.objid);
 object_brightness = star_catalog[row, :decam_flux5]
+object_h = star_catalog[row, :pix_h]
+object_w = star_catalog[row, :pix_w]
 @rput object_brightness
-
+@rput object_h
+@rput object_w
+im_size_h = size(image, 1)
+im_size_w = size(image, 2)
+@rput im_size_h
+@rput im_size_w
 R"""
-PlotMatrix(image_diff[h_range, w_range]) +
-    ggtitle(paste(ind, object_brightness, sep=": "))
+grid.arrange(
+    PlotMatrix(image_diff[h_range, w_range]) +
+        ggtitle(paste(ind, object_brightness, sep=": "))
+,
+    ggplot() + geom_point(aes(x=object_h, y=object_w), size=2, color="red") +
+        xlim(1, im_size_h) + ylim(1, im_size_w),
+ncol=2
+)
 """
 
 
