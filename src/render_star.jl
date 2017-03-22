@@ -42,6 +42,7 @@ end
 
 data_path = joinpath(ENV["GIT_REPO_LOC"], "DECamSurvey.jl", "dat")
 src_path = joinpath(ENV["GIT_REPO_LOC"], "DECamSurvey.jl", "src")
+include(joinpath(src_path, "objectives.jl"))
 include(joinpath(src_path, "psf_lib.jl"))
 include(joinpath(src_path, "kernels.jl"))
 
@@ -139,115 +140,29 @@ rendered_image = fill(NaN, size(image));
 # Set a lower bound and make sure the psf is greater than the lower bound
 # but still normalized.
 psf_lb = 1e-10
-n = prod(size(psf_image_orig))
-psf_image = psf_image_orig * (1 - 2 * psf_lb * n) + 2 * psf_lb;
-
-# Get a permutation that sets the middle of the PSF to be the last index,
-# since that's the one that's set to zero in the unconstrained simplex encoding.
-psf_center = (Int(floor(0.5 * size(psf_image, 1) + 1)),
-              Int(floor(0.5 * size(psf_image, 2) + 1)))
-psf_center_ind = sub2ind(size(psf_image),psf_center...)
-psf_inds = setdiff(1:length(psf_image), psf_center_ind);
-push!(psf_inds, psf_center_ind);
-
-function encode_params(psf_image, scale)
-    par = fill(NaN, length(psf_image) + 1)
-
-    offset = 0
-    psf_free = unsimplexify_parameter(psf_image[psf_inds], psf_lb, 1.0);
-    par[offset + (1:length(psf_free))] = psf_free
-    offset += length(psf_free)
-
-    par[offset + 1] = log(scale)
-
-    return par
-end
-
-function decode_params(par)
-    psf_size = length(par) - 1
-
-    # Check that it's square
-    psf_dim = Int(floor(sqrt(psf_size)))
-    @assert abs(psf_dim - sqrt(psf_size)) < 1e-16
-
-    offset = 0
-    psf_free = par[offset + (1:(psf_size - 1))]
-    offset += psf_size - 1
-
-    psf_vec = simplexify_parameter(psf_free, psf_lb, 1.0);
-    ipermute!(psf_vec, psf_inds);
-    psf_image = reshape(psf_vec, (psf_dim, psf_dim));
-
-    scale = exp(par[offset + 1])
-
-    return psf_image, scale
-end
-
-
-image_diff = similar(star_image);
-active_pixel_indices = find(!isnan(star_image));
-function objective(psf_image, scale)
-    rendered_image = similar(psf_image, size(star_image));
-    rendered_image[:] = NaN
-    render_image!(rendered_image, psf_image, scale,
-                  pixel_ranges, star_catalog, im_header)
-    image_diff = rendered_image - star_image
-    result = 0.
-    for pix_ind in active_pixel_indices
-        result += image_diff[pix_ind] ^ 2
-    end
-    result /= length(active_pixel_indices)
-    println(result)
-    return result
-end
+psf_image = enforce_psf_lower_bound(psf_image_orig, psf_lb);
+encode_params, decode_params, objective, objective_wrap,  objective_grad! =
+    get_single_flux_single_psf_objectives(
+        star_image, psf_image, psf_lb, pixel_ranges, star_catalog, im_header);
 
 objective(psf_image, 1000.0)
 
-function objective_wrap(par)
-    psf_image, scale = decode_params(par)
-    return objective(psf_image, scale)
-end
-
-
 scale = 617.0
-
 par = encode_params(psf_image, scale);
-psf_image_test, scale_test = decode_params(par);
-@assert maximum(abs(psf_image - psf_image_test)) < 1e-12
-@assert abs(scale - scale_test) < 1e-12
-objective_wrap(par);
-
-objective_wrap_tape = GradientTape(objective_wrap, par);
-
-results = (similar(par));
-gradient!(results, objective_wrap_tape, par);
-
-# Doesn't work:
-# objective_wrap_hess_tape = ReverseDiff.HessianTape(objective_wrap, par);
-# compiled_objective_wrap_tape = compile(objective_wrap_tape)
-# hess_results = similar(par, (length(par), length(par)));
-# ReverseDiff.hessian!(hess_results, objective_wrap_hess_tape, par);
-# ReverseDiff.hessian(objective_wrap_hess_tape, par);
-
-function objective_grad!(par, results)
-    gradient!(results, objective_wrap_tape, par)
-end
+results = similar(par);
 objective_grad!(par, results);
-maximum(abs(results))
-
-epsilon = 1e-8
-psf_image_eps, scale_eps = decode_params(par + epsilon * results);
-if false
-    matshow(psf_image_eps - psf_image); colorbar()
-end
 
 optim_res = Optim.optimize(
     objective_wrap, objective_grad!, par, LBFGS(),
-    Optim.Options(f_tol=1e-12, iterations=200,
+    Optim.Options(f_tol=1e-4, iterations=200,
     store_trace = true, show_trace = true))
 
 psf_image_opt, scale_opt = decode_params(optim_res.minimizer);
 
+@rput psf_image_opt
+R"""
+PlotMatrix(psf_image_opt)
+"""
 
 ###########################
 # Look at results
@@ -292,9 +207,9 @@ ncol=2
 """
 
 
+ind = 0
 
-
-ind = 18
+ind = ind + 1
 pr = pixel_ranges[ind]
 @rput image_diff;
 @rput image;
@@ -311,13 +226,13 @@ object_brightness = star_catalog[row, :decam_flux5]
 R"""
 grid.arrange(
 PlotMatrix(image[h_range, w_range]) +
-    ggtitle(paste(ind, object_brightness, sep=": "))
+    ggtitle(paste("Original image", ind, object_brightness, sep=": "))
 ,
 PlotMatrix(rendered_image[h_range, w_range]) +
-    ggtitle(paste(ind, object_brightness, sep=": "))
+    ggtitle(paste("Rendered", ind, object_brightness, sep=": "))
 ,
 PlotMatrix(image_diff[h_range, w_range]) +
-    ggtitle(paste(ind, object_brightness, sep=": "))
+    ggtitle(paste("Residual", ind, object_brightness, sep=": "))
 , ncol=3)
 """
 
@@ -343,6 +258,18 @@ R"""
 PlotRaster(filter(image_diff_melt, objid==this_objid)) +
     ggtitle(sprintf("objid=%d", this_objid))
 """
+
+###########
+# Try finite differences
+
+using Calculus
+function objective_grad(par)
+    results = similar(par)
+    gradient!(results, objective_wrap_tape, par)
+    return results
+end
+
+hess = jacobian(objective_grad, optim_res.minimizer, :central);
 
 
 

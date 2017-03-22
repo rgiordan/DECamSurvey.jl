@@ -10,6 +10,9 @@ Compression code:
 
 GAIA-PS1 combined catalog (astrometry from GAIA, photometry from PS1):
 /project/projectdirs/cosmo/work/gaia/chunks-ps1-gaia
+# Note that the RA and DEC in these files are not the GAIA RA and DEC
+DEC = DEC_OK - DDEC / 3.6e6
+RA = RA_OK - DRA / (3.6e6 * cos(DEC (in radians)))
 
 DR3 tractor reductions:
 /global/project/projectdirs/cosmo/data/legacysurvey/dr3/

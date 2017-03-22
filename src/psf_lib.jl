@@ -82,18 +82,42 @@ function gaussian_at_point(pix_loc::Vector{Float64},
 end
 
 
-function render_image!(rendered_image, psf_image, scale,
-                       pixel_ranges, star_catalog, im_header)
-    rendered_image[:] = NaN
-    for pr in pixel_ranges
+function render_catalog_image!(rendered_image, psf_image, scale,
+                               pixel_ranges, star_catalog, im_header)
+
+    object_brightnesses = []
+    object_locs = fill(NaN, length(pixel_ranges), 2)
+    for ind in 1:length(pixel_ranges)
+        pr = pixel_ranges[ind]
         row = findfirst(star_catalog[:objid] .== pr.objid)
         object_loc = Array(star_catalog[row, [:pix_h, :pix_w]])[:]
         object_brightness = star_catalog[row, :decam_flux5] * scale
+        append!(object_brightnesses, object_brightness)
+        object_locs[ind, :] = object_loc
+    end
+
+    render_image!(rendered_image, psf_image, pixel_ranges,
+                   object_locs, object_brightnesses, im_header["AVSKY"])
+    return true
+end
+
+
+# obj_locs and object_brightnesses are in image coordinates (pixels and
+# pixel intensities)
+function render_image!(rendered_image, psf_image, pixel_ranges,
+                       obj_locs, object_brightnesses, avsky)
+    rendered_image[:] = NaN
+    @assert length(pixel_ranges) == size(obj_locs, 1)
+    @assert 2 == size(obj_locs, 2)
+    @assert length(pixel_ranges) == length(object_brightnesses)
+    for ind in 1:length(pixel_ranges)
+        pr = pixel_ranges[ind]
+        row = findfirst(star_catalog[:objid] .== pr.objid)
 
         kernel_width = 2.0
         for h in pr.h_range, w in pr.w_range
             if isnan(rendered_image[h, w])
-                rendered_image[h, w] = im_header["AVSKY"]
+                rendered_image[h, w] = avsky
             end
         end
         add_interpolation_to_image!(
@@ -103,12 +127,13 @@ function render_image!(rendered_image, psf_image, scale,
             psf_image,
             pr.h_range,
             pr.w_range,
-            object_loc,
-            object_brightness)
+            obj_locs[ind, :][:],
+            object_brightnesses[ind])
     end
 
     return true
 end
+
 
 # Define star ranges.
 type PixelRange
@@ -170,4 +195,11 @@ function unsimplexify_parameter(param, lb::Float64, scale::Float64)
     free_param = [ p * scale for p in unconstrain_simplex(z_sim) ]
 
     free_param
+end
+
+
+# Make a PSF that sums to one but has all values greater than lb.
+function enforce_psf_lower_bound(psf_image_orig, lb)
+    n = prod(size(psf_image_orig))
+    return psf_image_orig * (1 - 2 * lb * n) + 2 * lb;
 end

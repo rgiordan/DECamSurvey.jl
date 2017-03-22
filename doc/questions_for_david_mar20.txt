@@ -1,0 +1,4 @@
+- Does the WCS consider the upper left pixel to be (1, 1) or (0, 0)?
+- What is the organizing principle of the gaia files?
+- How to convert between flux and pixels?
+- I don't think we can downsample the PSF.
