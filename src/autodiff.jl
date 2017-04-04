@@ -89,12 +89,15 @@ function get_hess_p_function(f, x)
     return hess_p
 end
 
+k = 50
+A = rand(k, k)
+A = 0.5 * (A + A') + eye(k)
 function f(x)
-    sum(x .* x)
+    0.5 * dot(x, A * x)
 end
 
-x = rand(4) # my input value
-v = rand(4) # the `v` in `H * v`
+x = rand(k) # my input value
+v = rand(k) # the `v` in `H * v`
 
 
 hess_p = get_hess_p_function(f, x)
@@ -105,19 +108,45 @@ f_hess * v
 hess_p(x, v)
 
 
+############
+# Conjugate gradient
+
+b = copy(v)
+x0 = rand(k)
+
+# Get hess^{-1} v starting at x0
+function mult_a(v)
+    hess_p(x, v)
+end
+
+function conjugate_gradient(mult_a, b, x0, tol=1e-6)
+    r0 = mult_a(x0) - b
+    p0 = copy(-r0)
+    tol = 1e-6
+
+    ind = 0
+    x1 = copy(x0)
+    while sqrt(dot(r0, r0)) > tol
+        alpha = dot(r0, r0) / dot(p0, mult_a(p0))
+        x1 = x0 + alpha * p0
+        r1 = r0 + alpha * mult_a(p0)
+        beta = dot(r1, r1) / dot(r0, r0)
+        p1 = -r1 + beta * p0
+        r0 = copy(r1)
+        p0 = copy(p1)
+        x0 = copy(x1)
+        ind = ind + 1
+        println(ind, " ", sqrt(dot(r0, r0)))
+    end
+
+    return x1
+end
+
+soln = conjugate_gradient(mult_a, b, x0);
+maximum(abs(soln - (f_hess \ b)))
+maximum(abs((A \ b) - soln))
 
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-#
+    #

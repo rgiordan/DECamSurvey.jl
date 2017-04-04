@@ -172,10 +172,63 @@ objective(psf_image)
 par = encode_params(psf_image);
 results = similar(par);
 objective_grad!(par, results);
+objective_hess_vec_prod(par, results);
+
+
+#####################
+# CG?
+
+function conjugate_gradient(mult_a, b, x0, tol=1e-6)
+    r0 = mult_a(x0) - b
+    p0 = copy(-r0)
+    tol = 1e-6
+    b_mag = sqrt(dot(b, b))
+
+    ind = 0
+    x1 = copy(x0)
+    while sqrt(dot(r0, r0)) > (tol * b_mag)
+        a_p0 = mult_a(p0)
+        p0_a_p0 = dot(p0, a_p0)
+        if p0_a_p0 < 0
+            println("Negative direction encountered")
+            return x1
+        end
+        alpha = dot(r0, r0) / p0_a_p0
+        x1 = x0 + alpha * p0
+        r1 = r0 + alpha * a_p0
+        beta = dot(r1, r1) / dot(r0, r0)
+        p1 = -r1 + beta * p0
+        r0 = copy(r1)
+        p0 = copy(p1)
+        x0 = copy(x1)
+        ind = ind + 1
+        println(ind, " ", sqrt(dot(r0, r0)), " ", alpha, " ", beta)
+        if ind > length(x0)
+            println("Error - CG should terminate by now.")
+            return x1
+        end
+    end
+
+    return x1
+end
+
+par = optim_res.minimizer
+obj_grad = similar(par);
+objective_grad!(par, obj_grad);
+function hess_p2(v)
+    return objective_hess_vec_prod(par, v) + lambda * v
+end
+lambda = 1e4
+step = conjugate_gradient(hess_p2, obj_grad, zeros(length(par)));
+objective_wrap(par) - objective_wrap(par - step)
+
+
+########################
+# Optim
 
 optim_res = Optim.optimize(
     objective_wrap, objective_grad!, par, LBFGS(),
-    Optim.Options(f_tol=1e-8, iterations=1000,
+    Optim.Options(f_tol=1e-8, iterations=500,
     store_trace = true, show_trace = true))
 
 psf_image_opt = decode_params(optim_res.minimizer);
@@ -187,6 +240,7 @@ grid.arrange(
     PlotMatrix(log10(psf_image_opt))
 )
 """
+
 
 ###########################
 # Look at results
