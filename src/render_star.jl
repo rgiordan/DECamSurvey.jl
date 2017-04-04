@@ -212,6 +212,7 @@ function conjugate_gradient(mult_a, b, x0, tol=1e-6)
     return x1
 end
 
+# It is only having problems because the Hessian is not positive definite.
 par = optim_res.minimizer
 obj_grad = similar(par);
 objective_grad!(par, obj_grad);
