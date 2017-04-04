@@ -20,3 +20,8 @@ http://legacysurvey.org/dr3/description/
 
 First test image:
 CP20160225/c4d_160302_094418_oki_z_v1.fits.fz
+
+
+scp rgiordan@cori.nersc.gov:\
+/global/project/projectdirs/cosmo/staging/decam/DECam_CP/CP20160225/\
+c4d_160302_094418_ok*_z_v1.fits.fz .

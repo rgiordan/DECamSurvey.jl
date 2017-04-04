@@ -46,13 +46,13 @@ include(joinpath(src_path, "objectives.jl"))
 include(joinpath(src_path, "psf_lib.jl"))
 include(joinpath(src_path, "kernels.jl"))
 
-fname_head = "c4d_160302_094418_oo"
+# fname_head = "c4d_160302_094418_oo"
+fname_head = "c4d_160302_094418"
 fname_tail = "_z_v1.fits"
-join([ fname_head, "i", fname_tail ])
 
-f_image = FITSIO.FITS(joinpath(data_path, join([ fname_head, "i", fname_tail ])));
-f_weight = FITSIO.FITS(joinpath(data_path, join([ fname_head, "w", fname_tail ])));
-f_mask = FITSIO.FITS(joinpath(data_path, join([ fname_head, "d", fname_tail ])));
+f_image = FITSIO.FITS(joinpath(data_path, join([ fname_head, "_oki", fname_tail ])));
+f_weight = FITSIO.FITS(joinpath(data_path, join([ fname_head, "_oow", fname_tail ])));
+f_mask = FITSIO.FITS(joinpath(data_path, join([ fname_head, "_ood", fname_tail ])));
 
 header = FITSIO.read_header(f_image[1]);
 asec_per_pixel = (header["PIXSCAL1"], header["PIXSCAL2"])
@@ -74,7 +74,23 @@ bricknames = get_bricknames_for_image(
 catalog_vec = [ load_brickname(brickname, wcs, image) for brickname in bricknames ];
 catalog = reduce(vcat, catalog_vec);
 
+# Get the flux conversion numbers.
+decals_f = FITSIO.FITS(joinpath(data_path, "survey-ccds-decals.fits"));
 
+FITSIO.read_header(decals_f[2]);
+decals_fnames = FITSIO.read(decals_f[2], "IMAGE_FILENAME");
+decals_ccdnums = FITSIO.read(decals_f[2], "CCDNUM");
+
+filename_row =
+    [ contains(file_row, fname_head) for file_row in decals_fnames ] &
+    (decals_ccdnums .== Int(im_header["CCDNUM"]));
+@assert sum(filename_row) == 1
+
+exptime = FITSIO.read(decals_f[2], "EXPTIME")[filename_row][1]
+ccdzpt = FITSIO.read(decals_f[2], "CCDZPT")[filename_row][1]
+
+# For converting catalog fluxes to images
+scale = 1 / (10^((22.5 - ccdzpt)/2.5) / exptime)
 
 ###################
 # Get pixels that we're going to process
@@ -96,6 +112,7 @@ end
 
 # Choose stars of a minimum brighntess
 star_catalog = catalog[star_rows & (catalog[:decam_flux5] .> 300), :];
+star_catalog = star_catalog[1, :]
 pixel_ranges = PixelRange[]
 for row in 1:nrow(star_catalog)
     ra = star_catalog[row, :ra]
@@ -122,7 +139,8 @@ if false
 end
 
 # Make an initial PSF guess
-psf_image_orig = fill(0.0, (12, 12));
+psf_size = 24
+psf_image_orig = fill(0.0, (psf_size, psf_size));
 psf_radius = 1.5
 psf_center = 0.5 * Float64[size(psf_image_orig, 1) + 1, size(psf_image_orig, 2) + 1];
 for h in 1:size(psf_image_orig, 1), w in 1:size(psf_image_orig, 2)
@@ -141,27 +159,33 @@ rendered_image = fill(NaN, size(image));
 # but still normalized.
 psf_lb = 1e-10
 psf_image = enforce_psf_lower_bound(psf_image_orig, psf_lb);
-encode_params, decode_params, objective, objective_wrap,  objective_grad! =
-    get_single_flux_single_psf_objectives(
-        star_image, psf_image, psf_lb, pixel_ranges, star_catalog, im_header);
+encode_params, decode_params, objective, objective_wrap,
+    objective_grad!, objective_hess_vec_prod =
+    get_single_psf_objectives(
+        star_image, psf_image, psf_lb, pixel_ranges, star_catalog, im_header, scale);
+# encode_params, decode_params, objective, objective_wrap,  objective_grad! =
+#     get_single_flux_single_psf_objectives(
+#         star_image, psf_image, psf_lb, pixel_ranges, star_catalog, im_header);
 
-objective(psf_image, 1000.0)
+objective(psf_image)
 
-scale = 617.0
-par = encode_params(psf_image, scale);
+par = encode_params(psf_image);
 results = similar(par);
 objective_grad!(par, results);
 
 optim_res = Optim.optimize(
     objective_wrap, objective_grad!, par, LBFGS(),
-    Optim.Options(f_tol=1e-4, iterations=200,
+    Optim.Options(f_tol=1e-8, iterations=1000,
     store_trace = true, show_trace = true))
 
-psf_image_opt, scale_opt = decode_params(optim_res.minimizer);
+psf_image_opt = decode_params(optim_res.minimizer);
 
 @rput psf_image_opt
 R"""
-PlotMatrix(psf_image_opt)
+grid.arrange(
+    PlotMatrix(psf_image_opt),
+    PlotMatrix(log10(psf_image_opt))
+)
 """
 
 ###########################
@@ -169,14 +193,28 @@ PlotMatrix(psf_image_opt)
 
 rendered_image = similar(psf_image_opt, size(star_image));
 rendered_image[:] = NaN
-render_image!(rendered_image, psf_image_opt, scale_opt,
-              pixel_ranges, star_catalog, im_header);
+
+object_brightnesses = [];
+object_locs = fill(NaN, length(pixel_ranges), 2);
+for ind in 1:length(pixel_ranges)
+    pr = pixel_ranges[ind]
+    row = findfirst(star_catalog[:objid] .== pr.objid)
+    object_loc = Array(star_catalog[row, [:pix_h, :pix_w]])[:]
+    object_brightness = star_catalog[row, :decam_flux5] * scale
+    append!(object_brightnesses, object_brightness)
+    object_locs[ind, :] = object_loc
+end
+
+render_image!(rendered_image, psf_image_opt, pixel_ranges,
+              object_locs, object_brightnesses, im_header["AVSKY"]);
 image_diff = rendered_image - star_image;
 
 ind = 0
 
 ind = ind + 1
 pr = pixel_ranges[ind]
+
+sum(image_diff[h_range, w_range]) / sum(image[h_range, w_range])
 
 @rput image_diff;
 h_range = pr.h_range;
@@ -236,43 +274,26 @@ PlotMatrix(image_diff[h_range, w_range]) +
 , ncol=3)
 """
 
-
-image_melt = melt_image(image, pixel_ranges);
-@rput image_melt;
-
-image_diff_melt = melt_image(image_diff, pixel_ranges);
-@rput image_diff_melt;
-
-objids = [pr.objid for pr in pixel_ranges ];
-h0 = [minimum(pr.h_range) for pr in pixel_ranges ];
-w0 = [minimum(pr.w_range) for pr in pixel_ranges ];
-w_perm = sortperm(w0)
-
+axis = 2
 ind = 0
 
 ind = ind + 1
-this_objid = objids[w_perm[ind]]
-@rput this_objid
+pr = pixel_ranges[ind]
+objid = pr.objid
+this_image = sum(image[pr.h_range, pr.w_range], axis)[:];
+this_rendered_image = sum(rendered_image[pr.h_range, pr.w_range], axis)[:];
 
+@rput this_image;
+@rput this_rendered_image;
+@rput objid
 R"""
-PlotRaster(filter(image_diff_melt, objid==this_objid)) +
-    ggtitle(sprintf("objid=%d", this_objid))
+df <- data.frame(x=1:length(this_image), im=this_image, rim=this_rendered_image)
+print(df)
+ggplot(df) +
+    geom_line(aes(x=x, y=im, color="original")) +
+    geom_line(aes(x=x, y=rim, color="rendered")) +
+    ggtitle(objid)
 """
-
-###########
-# Try finite differences
-
-using Calculus
-function objective_grad(par)
-    results = similar(par)
-    gradient!(results, objective_wrap_tape, par)
-    return results
-end
-
-hess = jacobian(objective_grad, optim_res.minimizer, :central);
-
-
-
 
 
 #
