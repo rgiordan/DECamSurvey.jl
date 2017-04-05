@@ -1,5 +1,7 @@
 
 
+
+
 k = 10
 H = rand(k, k)
 H = 0.5 * (H + H') + eye(k)
@@ -36,8 +38,26 @@ Tmat = SymTridiagonal(delta_vec, gamma_vec[2:end])
 Q' * H * Q - Tmat
 
 
+# The tridiagonal type is definitely faster
+k = 5000
+x = rand(k);
+y = rand(k + 1) + 2;
+foo = SymTridiagonal(y, x);
+bar = full(foo);
+@time eigfact(foo);
+@time eigfact(bar);
+@time chol(foo); # Fills in
+@time chol(bar);
 
 
+k = 20
+x = rand(k);
+y = rand(k + 1);
+foo = SymTridiagonal(y, x);
+for i in 1:k
+    foo[i, i] += 2.0
+end
+typeof(foo)
 
 
 

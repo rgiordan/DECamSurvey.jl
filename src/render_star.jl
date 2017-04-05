@@ -45,6 +45,7 @@ src_path = joinpath(ENV["GIT_REPO_LOC"], "DECamSurvey.jl", "src")
 include(joinpath(src_path, "objectives.jl"))
 include(joinpath(src_path, "psf_lib.jl"))
 include(joinpath(src_path, "kernels.jl"))
+include(joinpath(src_path, "cg_trust_region.jl"))
 
 # fname_head = "c4d_160302_094418_oo"
 fname_head = "c4d_160302_094418"
@@ -175,6 +176,24 @@ objective_grad!(par, results);
 objective_hess_vec_prod(par, results);
 
 
+####################
+# Jeff's CG TR
+
+function fg!(par, g)
+    objective_grad!(par, g)
+    return objective_wrap(par)
+end
+
+function hv!(par, v, Hv)
+    Hv[:] = objective_hess_vec_prod(par, v);
+end
+
+d = TwiceDifferentiableHV(objective_wrap, fg!, hv!)
+cg_result = Optim.optimize(d, par, CGTrustRegion())
+
+psf_image_opt = decode_params(cg_result.minimizer);
+
+
 #####################
 # CG?
 
@@ -229,10 +248,10 @@ objective_wrap(par) - objective_wrap(par - step)
 
 optim_res = Optim.optimize(
     objective_wrap, objective_grad!, par, LBFGS(),
-    Optim.Options(f_tol=1e-8, iterations=500,
+    Optim.Options(f_tol=1e-8, iterations=1000,
     store_trace = true, show_trace = true))
 
-psf_image_opt = decode_params(optim_res.minimizer);
+# psf_image_opt = decode_params(optim_res.minimizer);
 
 @rput psf_image_opt
 R"""
