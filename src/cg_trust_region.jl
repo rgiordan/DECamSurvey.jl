@@ -1,4 +1,13 @@
 # Written by Jeff Regier
+import NLSolversBase
+
+
+immutable TwiceDifferentiableHV <: NLSolversBase.AbstractObjective
+    f::Function
+    fg!::Function
+    hv!::Function
+end
+
 
 import Optim: update!, solve_tr_subproblem!, Optimizer, @add_generic_fields,
               Options, initial_state, update_state!, trace!, assess_convergence,
@@ -102,13 +111,6 @@ function trace!(tr, state, iteration, method::CGTrustRegion, options)
             options.show_trace,
             options.show_every,
             options.callback)
-end
-
-
-immutable TwiceDifferentiableHV
-    f::Function
-    fg!::Function
-    hv!::Function
 end
 
 
@@ -223,4 +225,30 @@ function assess_convergence(state::CGTrustRegionState, options)
     converged = x_converged || f_converged || g_converged
 
     return x_converged, f_converged, g_converged, converged, false
+end
+
+
+# Test
+if false
+
+    A = Float64[1 0.1; 0.1 1 ]
+    function f(par)
+        return (0.5 * par' * A * par)[1]
+    end
+
+    function fg!(par, g)
+        g[:] = A * par
+        return f(par)
+    end
+
+    function hv!(par, v, Hv)
+        Hv[:] = A * v
+    end
+
+    # Note: it appears that @add_generic_fields has changed under us.
+    par = Float64[0.2, 0.3]
+    g = similar(par)
+    d = TwiceDifferentiableHV(f, fg!, hv!)
+    cg_result = Optim.optimize(d, par, CGTrustRegion())
+
 end
