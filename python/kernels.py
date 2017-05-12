@@ -14,6 +14,7 @@ def eval_cubic_kernel(x, a):
     return result_01 + result_12
 
 
+# TODO: add shape checking.
 def cubic_shift_image(shift, image, new_image, a):
     # This shift is intended to be the decimal part of the only of the full shift.
     cubic_offsets = np.array([-2, -1, 0, 1])
@@ -37,6 +38,7 @@ def cubic_shift_image(shift, image, new_image, a):
             new_image[x_slice, y_slice] += kern[xi, 0] * kern[yi, 1] * image
 
 
+# TODO: add shape checking.
 def eval_cubic_interpolation(w_locs, h_locs, image_padded, a):
     w_ind = [ int(x) for x in np.trunc(w_locs) ]
     h_ind = [ int(x) for x in np.trunc(h_locs) ]
