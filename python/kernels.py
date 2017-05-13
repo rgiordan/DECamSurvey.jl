@@ -15,30 +15,6 @@ def eval_cubic_kernel(x, a):
 
 
 # TODO: add shape checking.
-def cubic_shift_image(shift, image, new_image, a):
-    # This shift is intended to be the decimal part of the only of the full shift.
-    cubic_offsets = np.array([-2, -1, 0, 1])
-
-    all_shifts = np.array([ shift + offset for offset in cubic_offsets ])
-    # The row is the shift, the column is the axis.
-    kern = eval_cubic_kernel(all_shifts, a)
-
-    # Think of it this way: the kernel defines a function in the coordinates of the original
-    # image at non-integer locations, where integer locations are the centers of the old
-    # pixel values.  Since the cubic kernel is four uints wide, the expanded image is larger
-    # than the original image.  This is evaluating the kernel function on an evenly spaced grid
-    # offset from the integer locations by an amount -<shift>.
-    new_image.fill(0.0)
-    for xi in range(len(cubic_offsets)):
-        for yi in range(len(cubic_offsets)):
-            xo = cubic_offsets[xi]
-            yo = cubic_offsets[yi]
-            x_slice = slice(1 - xo, 1 + image.shape[0] - xo)
-            y_slice = slice(1 - yo, 1 + image.shape[1] - yo)
-            new_image[x_slice, y_slice] += kern[xi, 0] * kern[yi, 1] * image
-
-
-# TODO: add shape checking.
 def eval_cubic_interpolation(w_locs, h_locs, image_padded, a):
     w_ind = [ int(x) for x in np.trunc(w_locs) ]
     h_ind = [ int(x) for x in np.trunc(h_locs) ]
@@ -65,5 +41,41 @@ def eval_cubic_interpolation(w_locs, h_locs, image_padded, a):
            image_padded[np.ix_(w_ind + cubic_offsets[wi], h_ind + cubic_offsets[hi])]
            for wi in offset_range ] \
            for hi in offset_range ])
+
+    return np.sum(image_interp_offsets, (0, 1))
+
+
+
+# Shift an image on a grid with the same scale as the original image.
+# This is more efficient since it doesn't require a kernel evaluation
+# for each grid point.
+#
+# The resulting image will be bigger than the original image due to the fact that the
+# cubic interpolation spreads the image out.
+# In order to express the larger image as a sum of shifted versions of the original image,
+# you must doubly pad the original image.
+#
+# To put it another way, this only interpolates inside a padded image.  It
+# reduces the padded image size by two pixels in each dimension, which remains
+# two pixels larger than the original image.
+#
+# TODO: add shape checking.
+def eval_cubic_interpolation_same_spacing(shift, image_padded, a):
+    cubic_offsets = np.array([-2, -1, 0, 1])
+
+    w_offsets = np.array([ shift[0] + offset for offset in cubic_offsets ])
+    h_offsets = np.array([ shift[1] + offset for offset in cubic_offsets ])
+
+    w_kern = eval_cubic_kernel(w_offsets, a)
+    h_kern = eval_cubic_kernel(h_offsets, a)
+
+    image_interp_offsets = np.array(
+        [[ w_kern[wi] * h_kern[hi] * \
+           image_padded[slice(2 + cubic_offsets[wi],
+                              image_padded.shape[0] - 2 + cubic_offsets[wi]),
+                        slice(2 + cubic_offsets[hi],
+                              image_padded.shape[0] - 2 + cubic_offsets[hi])]
+           for wi in range(len(cubic_offsets)) ] \
+           for hi in range(len(cubic_offsets)) ])
 
     return np.sum(image_interp_offsets, (0, 1))
