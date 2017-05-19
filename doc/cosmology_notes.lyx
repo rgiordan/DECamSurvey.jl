@@ -1,0 +1,1323 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Standard
+\begin_inset FormulaMacro
+\newcommand{\mbe}{\mathbb{E}}
+{\mathbb{E}}
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Integrating out 
+\begin_inset Formula $s$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+The model is
+\begin_inset Formula 
+\begin{align*}
+P\left(s\vert\Theta\right) & =\mathcal{N}\left(s;0,S\left(\Theta\right)\right)\\
+P\left(d\vert s,\lambda\right) & =\mathcal{N}\left(d;O\left(s,\lambda\right),N\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So, letting 
+\begin_inset Formula $L$
+\end_inset
+
+ denote log probabilities,
+\begin_inset Formula 
+\begin{align*}
+L\left(s,d\vert\Theta,\lambda\right) & =-\frac{1}{2}\left(s^{T}S\left(\Theta\right)^{-1}s+\left(d-O\left(s,\lambda\right)\right)N^{-1}\left(d-O\left(s,\lambda\right)\right)\right)-\frac{1}{2}\log\left|S\left(\Theta\right)\right|-\frac{1}{2}\log\left|N\right|+C.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We will use a Taylor expansion of the log of the conditional distribution
+ 
+\begin_inset Formula $P\left(s\vert d,\Theta,\lambda\right)$
+\end_inset
+
+, centered at the maximum, 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+.
+\begin_inset Formula 
+\begin{align*}
+L\left(s\vert d,\Theta,\lambda\right) & =-\frac{1}{2}\left(s^{T}S\left(\Theta\right)^{-1}s+\left(d-O\left(s,\lambda\right)\right)N^{-1}\left(d-O\left(s,\lambda\right)\right)\right)-\frac{1}{2}\log\left|S\left(\Theta\right)\right|+C\\
+\hat{s} & =\mathrm{argmax}_{s}L\left(s\vert d,\Theta,\lambda\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We Taylor expand 
+\begin_inset Formula $L\left(s\vert d,\Theta,\lambda\right)$
+\end_inset
+
+ around 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+ to second order, giving
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial L}{\partial s} & =-S\left(\Theta\right)^{-1}s+\frac{\partial O\left(s,\lambda\right)^{T}}{\partial s}N^{-1}\left(d-O\left(s,\lambda\right)\right)\\
+\frac{\partial^{2}L}{\partial s\partial s^{T}} & =-S\left(\Theta\right)^{-1}-\frac{\partial O\left(s,\lambda\right)^{T}}{\partial s}N^{-1}\frac{\partial O\left(s,\lambda\right)}{\partial s^{T}}+\frac{\partial^{2}O\left(s,\lambda\right)}{\partial s\partial s}N^{-1}\left(d-O\left(s,\lambda\right)\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that the last term is a tensor product not expressible as a matrix
+ multiplication.
+ Since 
+\begin_inset Formula $\left.\partial L/\partial s\right|_{\hat{s}}=0$
+\end_inset
+
+, we have
+\begin_inset Formula 
+\begin{align*}
+L\left(s\vert d,\Theta,\lambda\right) & \approx L\left(\hat{s}\vert d,\Theta,\lambda\right)+\frac{1}{2}\left(s-\hat{s}\right)^{T}\frac{\partial^{2}L}{\partial s\partial s^{T}}\left(s-\hat{s}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Define
+\begin_inset Formula 
+\begin{align*}
+D & :=-\left.\frac{\partial^{2}L}{\partial s\partial s^{T}}\right|_{\hat{s}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Here, 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+ is a function of 
+\begin_inset Formula $d$
+\end_inset
+
+, 
+\begin_inset Formula $\Theta$
+\end_inset
+
+, and 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+ In order to use this in the expression 
+\begin_inset Formula $P\left(s,d\vert\lambda,\Theta\right)$
+\end_inset
+
+ we make the change of variables
+\begin_inset Formula 
+\begin{align*}
+\delta s & \leftarrow s-\hat{s}\\
+d & \leftarrow d
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The Jacobian of this transform is given by
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial\left(\delta s,d\right)^{T}}{\partial\left(s,d\right)} & =\left[\begin{array}{cc}
+I_{s} & 0\\
+\frac{\partial\hat{s}}{\partial d} & I_{d}
+\end{array}\right]
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+so the determinant of the Jacobian is 
+\begin_inset Formula 
+\begin{align*}
+\left|\frac{\partial\left(\delta s,d\right)^{T}}{\partial\left(s,d\right)}\right| & =1.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Consequently, the log joint distribution is 
+\begin_inset Formula 
+\begin{align*}
+L\left(\delta s,d\vert\lambda,\Theta\right) & =-\frac{1}{2}\left(\left(\delta s+\hat{s}\right)^{T}S\left(\Theta\right)^{-1}\left(\delta s+\hat{s}\right)+\left(d-O\left(\delta s+\hat{s},\lambda\right)\right)N^{-1}\left(d-O\left(\delta s+\hat{s},\lambda\right)\right)\right)-\frac{1}{2}\log\left|S\left(\Theta\right)\right|-\frac{1}{2}\log\left|N\right|+C
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Taking a Taylor expansion of 
+\begin_inset Formula $L\left(\delta s,d\vert\lambda,\Theta\right)$
+\end_inset
+
+ in 
+\begin_inset Formula $\delta s$
+\end_inset
+
+, this time around 
+\begin_inset Formula $0$
+\end_inset
+
+ gives a similar expression to the expansion of 
+\begin_inset Formula $P\left(s\vert d,\lambda,\Theta\right)$
+\end_inset
+
+ around 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{align*}
+L\left(\delta s,d\vert\lambda,\Theta\right) & =-\frac{1}{2}\left(\hat{s}^{T}S\left(\Theta\right)^{-1}\hat{s}+\left(d-O\left(\hat{s},\lambda\right)\right)N^{-1}\left(d-O\left(\hat{s},\lambda\right)\right)\right)-\frac{1}{2}\log\left|S\left(\Theta\right)\right|-\frac{1}{2}\log\left|N\right|-\frac{1}{2}\delta s^{T}D\delta s+C\left(d\right)\left\Vert \delta s\right\Vert ^{3}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Here, we have used the fact that the normalizing constant of 
+\begin_inset Formula $P\left(d\vert\lambda,\Theta\right)$
+\end_inset
+
+ does not depend on 
+\begin_inset Formula $s$
+\end_inset
+
+ so that
+\begin_inset Formula 
+\begin{align*}
+\left.\frac{\partial}{\partial s}L\left(s,d\vert\lambda,\Theta\right)\right|_{\hat{s}}= & \left.\frac{\partial}{\partial s}\left(L\left(s\vert d,\lambda,\Theta\right)+-L\left(d\vert\lambda,\Theta\right)\right)\right|_{\hat{s}}=0
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and of course that
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial O\left(s,\lambda\right)}{\partial s} & =\frac{\partial O\left(\delta s+\hat{s},\lambda\right)}{\partial\delta s}
+\end{align*}
+
+\end_inset
+
+Now, we want to assume that 
+\begin_inset Formula $\left\Vert \delta s\right\Vert ^{3}\ll\left\Vert \delta s\right\Vert ^{2}$
+\end_inset
+
+.
+ This may be true after we condition on 
+\begin_inset Formula $d$
+\end_inset
+
+; it is not true before we condition on 
+\begin_inset Formula $d$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Simple example model
+\end_layout
+
+\begin_layout Standard
+Let's take
+\begin_inset Formula 
+\begin{align*}
+P\left(x\vert s,\lambda\right) & =\mathcal{N}\left(s^{2}+\lambda,\tau_{x}^{-1}\right)\\
+P\left(s\right) & =\mathcal{N}\left(0,\tau_{s}^{-1}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+So that
+\begin_inset Formula 
+\begin{align*}
+\log P\left(x,s\vert\lambda\right) & =-\frac{1}{2}\left(\tau_{x}\left(x-\lambda-s^{2}\right)^{2}+\tau_{s}s^{2}\right)+C
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The marginal MLE for 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ is given by
+\begin_inset Formula 
+\begin{align*}
+P\left(x\vert\lambda\right) & =\int P\left(x,s\vert\lambda,s\right)ds\\
+\frac{\partial P\left(x\vert\lambda\right)}{\partial\lambda} & =\frac{\partial}{\partial\lambda}\int P\left(x,s\vert\lambda\right)ds\\
+ & =\int P\left(x,s\vert\lambda\right)\frac{\partial}{\partial\lambda}\log P\left(x,s\vert\lambda\right)ds\\
+ & =\int P\left(x,s\vert\lambda\right)\tau_{x}\left(x-\lambda-s^{2}\right)ds\\
+ & =\tau_{x}\left(x-\lambda\right)\int P\left(x,s\vert\lambda\right)ds-\tau_{x}\int s^{2}P\left(s\vert x,\lambda\right)P\left(x\vert\lambda\right)ds\\
+ & =\tau_{x}P\left(x\vert\lambda\right)\left(x-\lambda-\int s^{2}P\left(s\vert x,\lambda\right)ds\right)\\
+\left.\frac{\partial P\left(x\vert\lambda\right)}{\partial\lambda}\right|_{\hat{\lambda}} & =0\Rightarrow\\
+\hat{\lambda} & =x-\int s^{2}P\left(s\vert x,\lambda\right)ds
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This looks a lot like the Uros approximation, but it came from the linear
+ dependence on 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+ More generally, for location families,
+\begin_inset Formula 
+\begin{align*}
+P\left(x\vert s,\lambda\right) & =\mathcal{N}\left(Q\left(s,\lambda\right),\tau_{x}^{-1}\right)\\
+P\left(s\right) & =\mathcal{N}\left(0,\tau_{s}^{-1}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial P\left(x\vert\lambda\right)}{\partial\lambda} & =\frac{\partial}{\partial\lambda}\int P\left(x,s\vert\lambda\right)ds\\
+ & =\int P\left(x,s\vert\lambda\right)\frac{\partial}{\partial\lambda}\log P\left(x,s\vert\lambda\right)ds\\
+ & =\int P\left(x,s\vert\lambda\right)\frac{\partial}{\partial\lambda}\left(-\frac{\tau_{x}}{2}\left(x-Q\left(s,\lambda\right)\right)^{2}+C\right)ds\\
+ & =\int P\left(x,s\vert\lambda\right)\tau_{x}\left(x-Q\left(s,\lambda\right)\right)Q_{\lambda}\left(s,\lambda\right)ds\\
+ & =\tau_{x}x\int P\left(x,s\vert\lambda\right)Q_{\lambda}\left(s,\lambda\right)ds-\tau_{x}\int P\left(x,s\vert\lambda\right)Q\left(s,\lambda\right)Q_{\lambda}\left(s,\lambda\right)ds\\
+ & =\tau_{x}x\int P\left(s\vert x,\lambda\right)P\left(x\vert\lambda\right)Q_{\lambda}\left(s,\lambda\right)ds-\tau_{x}\int P\left(s\vert x,\lambda\right)P\left(x\vert\lambda\right)Q\left(s,\lambda\right)Q_{\lambda}\left(s,\lambda\right)ds
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The first order condition gives
+\begin_inset Formula 
+\begin{align*}
+\left.\frac{\partial P\left(x\vert\lambda\right)}{\partial\lambda}\right|_{\hat{\lambda}} & =0\Rightarrow\\
+x\int P\left(s\vert x,\lambda\right)Q_{\lambda}\left(s,\lambda\right)ds & =\int P\left(s\vert x,\lambda\right)Q\left(s,\lambda\right)Q_{\lambda}\left(s,\lambda\right)ds
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Assuming that 
+\begin_inset Formula $P\left(s\vert x,\lambda\right)$
+\end_inset
+
+ is normal, 
+\begin_inset Formula 
+\begin{align*}
+P\left(s\vert x,\lambda\right) & \approx\mathcal{N}\left(\hat{s},\tau_{p}^{-1}\right),
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and that, over ranges on order 
+\begin_inset Formula $\tau_{p}^{-1/2}$
+\end_inset
+
+, 
+\begin_inset Formula $Q\left(s,\lambda\right)$
+\end_inset
+
+ is approximately quadratic in 
+\begin_inset Formula $s$
+\end_inset
+
+,
+\begin_inset Formula 
+\begin{align*}
+Q\left(s,\lambda\right) & \approx Q\left(\hat{s},\lambda\right)+Q_{s}\left(\hat{s},\lambda\right)\left(s-\hat{s}\right)+\frac{1}{2}Q_{ss}\left(\hat{s},\lambda\right)\left(s-\hat{s}\right)^{2}\\
+Q_{\lambda}\left(s,\lambda\right) & \approx Q_{\lambda}\left(\hat{s},\lambda\right)+Q_{\lambda s}\left(\hat{s},\lambda\right)\left(s-\hat{s}\right)+\frac{1}{2}Q_{\lambda ss}\left(\hat{s},\lambda\right)\left(s-\hat{s}\right)^{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+gives
+\begin_inset Formula 
+\begin{align*}
+x\left(Q_{\lambda}\left(\hat{s},\hat{\lambda}\right)+\frac{1}{2}Q_{\lambda ss}\left(\hat{s},\hat{\lambda}\right)\tau_{p}^{-1}\right) & =Q\left(\hat{s},\hat{\lambda}\right)+\frac{1}{2}Q_{ss}\left(\hat{s},\hat{\lambda}\right)\tau_{p}^{-1}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The full (non-marginal) MLE is
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial\log P\left(x\vert s=\hat{s},\lambda\right)}{\partial\lambda} & =\frac{\partial}{\partial\lambda}\left(-\frac{1}{2}\left(x-Q\left(\hat{s},\lambda\right)\right)^{2}-C\right)\\
+ & =\left(x-Q\left(\hat{s},\lambda\right)\right)\left(Q_{\lambda}\left(\hat{s},\lambda\right)+Q_{s}\left(\hat{s},\lambda\right)\frac{\partial\hat{s}}{\partial\lambda}\right)\Rightarrow\\
+Q\left(\hat{s},\hat{\lambda}\right) & =x
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let's try a simple model that is jointly nonlinear in 
+\begin_inset Formula $s$
+\end_inset
+
+ and 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+\begin_inset Formula 
+\begin{align*}
+P\left(x\vert s,\lambda\right) & =\mathcal{N}\left(s^{2}\lambda,\tau_{x}^{-1}\right)\\
+P\left(s\right) & =\mathcal{N}\left(0,\tau_{s}^{-1}\right)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial}{\partial\lambda}P\left(x\vert\lambda\right) & =\int P\left(x,s\vert\lambda\right)\frac{\partial}{\partial\lambda}\log P\left(x,s\vert\lambda\right)ds\\
+ & =\int P\left(x,s\vert\lambda\right)\frac{\partial}{\partial\lambda}\left(-\frac{\tau_{x}}{2}\left(x-s^{2}\lambda\right)^{2}+C\right)ds\\
+ & =\tau_{x}\int P\left(x,s\vert\lambda\right)\left(x-s^{2}\lambda\right)s^{2}ds\\
+ & =\tau_{x}P\left(x\vert\lambda\right)\int P\left(s\vert x,\lambda\right)\left(x-s^{2}\lambda\right)s^{2}ds\\
+x\int P\left(s\vert x,\lambda\right)s^{2}ds & =\lambda\int P\left(s\vert x,\lambda\right)s^{4}ds
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Isn't this the EM algorithm re-munged somehow?
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial}{\partial\lambda}P\left(x\vert\lambda\right) & =\int P\left(x,s\vert\lambda\right)\frac{\partial}{\partial\lambda}\log P\left(x,s\vert\lambda\right)ds\\
+ & =P\left(x\vert\lambda\right)\int P\left(s\vert x,\lambda\right)\frac{\partial}{\partial\lambda}\log P\left(x,s\vert\lambda\right)ds\\
+\left.\frac{\partial}{\partial\lambda}P\left(x\vert\lambda\right)\right|_{\hat{\lambda}} & =0\Rightarrow\\
+P\left(x\vert\hat{\lambda}\right)\int P\left(s\vert x,\lambda\right)\left.\frac{\partial}{\partial\lambda}\log P\left(x,s\vert\lambda\right)\right|_{\hat{\lambda}}ds & =0\Rightarrow\\
+\left.\frac{\partial}{\partial\lambda}\int P\left(s\vert x,\hat{\lambda}\right)\log P\left(x,s\vert\lambda\right)ds\right|_{\hat{\lambda}} & =0
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This is indeed the convergence criterion for the EM algorithm.
+\end_layout
+
+\begin_layout Section
+One perspective
+\end_layout
+
+\begin_layout Standard
+It seems they are saying that
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+P\left(x\vert\lambda\right) & =\int P\left(x,s\vert\lambda\right)ds\\
+P\left(s\vert x,\lambda\right) & =\frac{P\left(s,x\vert\lambda\right)}{P\left(x\vert\lambda\right)}\\
+ & \approx\mathcal{N}\left(\hat{s},\tau_{p}^{-1}\right)\\
+\hat{s} & =\textrm{argmax}_{s}\log P\left(s,x\vert\lambda\right)\\
+\tau_{p}^{-1} & =\left.\frac{\partial^{2}\log P\left(s,x\vert\lambda\right)}{\partial s\partial s}\right|_{\hat{s}}\Rightarrow\\
+\log P\left(s\vert x,\lambda\right) & =-\frac{\tau_{p}}{2}\left(s-\hat{s}\right)^{2}+\frac{1}{2}\log\tau_{p}-\log2\pi\\
+ & =\log P\left(s,x\vert\lambda\right)-\log P\left(x\vert\lambda\right)\Rightarrow\\
+\log P\left(x\vert\lambda\right) & =\log P\left(s,x\vert\lambda\right)-\left(-\frac{\tau_{p}}{2}\left(s-\hat{s}\right)^{2}+\frac{1}{2}\log\tau_{p}-\log2\pi\right)\\
+ & \approx\log P\left(s,x\vert\lambda\right)+\frac{1}{2}\log\tau_{p}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+because the 
+\begin_inset Formula $s$
+\end_inset
+
+ dependence must disappear.
+ It is still hard for me to see whether this is ok or not.
+ For example, is there strong lambda dependence in the lower-order non-quadratic
+ terms of 
+\begin_inset Formula $P\left(s\vert x,\lambda\right)$
+\end_inset
+
+? Such terms could be small in magnitude – and so unimportant for the calculatio
+n of the normalized 
+\begin_inset Formula $P\left(s\vert x,\lambda\right)$
+\end_inset
+
+ – but still depend strongly on 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ in the joint 
+\begin_inset Formula $P\left(s,x\vert\lambda\right)$
+\end_inset
+
+ and so have a non-negligible effect on the maximum.
+\end_layout
+
+\begin_layout Section
+A specific case, again
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+P\left(x\vert s,\lambda\right) & =\mathcal{N}\left(s^{2}\lambda,\tau_{x}^{-1}\right)\\
+P\left(s\right) & =\mathcal{N}\left(0,\tau_{s}^{-1}\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+It would follow that
+\begin_inset Formula 
+\begin{align*}
+\log P\left(x,s\vert\lambda\right) & =\log P\left(x\vert s,\lambda\right)+\log P\left(s\right)\\
+ & =-\frac{1}{2}\left(\tau_{x}\left(x-s^{2}\lambda\right)^{2}+\tau_{s}s^{2}\right)+C\\
+ & =-\frac{1}{2}\left(\tau_{x}x^{2}-2\tau_{x}xs^{2}\lambda+\tau_{x}s^{4}\lambda^{2}+\tau_{s}s^{2}\right)+C\\
+\frac{\partial}{\partial s}\log P\left(x,s\vert\lambda\right) & =-\frac{1}{2}\left(-4\tau_{x}xs\lambda+4\tau_{x}s^{3}\lambda^{2}+2\tau_{s}s\right)\\
+\frac{\partial^{2}}{\partial s^{2}}\log P\left(x,s\vert\lambda\right) & =-\frac{1}{2}\left(-4\tau_{x}x\lambda+12\tau_{x}s^{2}\lambda^{2}+2\tau_{s}\right)\\
+\hat{s} & =\textrm{argmax}_{s}\left\{ \log P\left(x,s\vert\lambda\right)\right\} \\
+\left.\frac{\partial}{\partial s}\log P\left(x,s\vert\lambda\right)\right|_{\hat{s}} & =0\Rightarrow\\
+\hat{s} & =0\textrm{ or }\\
+-4\tau_{x}x\lambda+4\tau_{x}\hat{s}^{2}\lambda^{2}+2\tau_{s} & =0\Rightarrow\\
+\hat{s}^{2} & =\frac{x}{\lambda}-\frac{1}{2}\frac{\tau_{s}}{\tau_{x}}\frac{1}{\lambda^{2}}\\
+\left.\frac{\partial^{2}}{\partial s^{2}}\log P\left(x,s\vert\lambda\right)\right|_{\hat{s}} & =-\frac{1}{2}\left(-4\tau_{x}x\lambda+12\tau_{x}\lambda^{2}\left(\frac{x}{\lambda}-\frac{1}{2}\frac{\tau_{s}}{\tau_{x}}\frac{1}{\lambda^{2}}\right)+2\tau_{s}\right)\\
+ & =-\frac{1}{2}\left(-4\tau_{x}x\lambda+12\tau_{x}x\lambda-6\tau_{s}+2\tau_{s}\right)\\
+ & =-4\tau_{x}x\lambda+2\tau_{s}\\
+D & =:\left.\frac{\partial^{2}}{\partial s^{2}}\log P\left(x,s\vert\lambda\right)\right|_{\hat{s}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Assuming 
+\begin_inset Formula $x\lambda>0$
+\end_inset
+
+, the quadratic approximation is a proper distribution at 
+\begin_inset Formula $\hat{s}\ne0$
+\end_inset
+
+ for large enough 
+\begin_inset Formula $\tau_{x}$
+\end_inset
+
+.
+ Plugging in the Uros approximation,
+\begin_inset Formula 
+\begin{align*}
+\log P\left(x,s\vert\lambda\right) & \approx\log P\left(x,\hat{s}\vert\lambda\right)+\frac{1}{2}D\left(s-\hat{s}\right)^{2}\\
+ & =\log P\left(x,\hat{s}\vert\lambda\right)+\frac{1}{2}D\left(s-\hat{s}\right)^{2}-\frac{1}{2}\log\left(-D\right)+\frac{1}{2}\log\left(-D\right)\Rightarrow\\
+\log P\left(x\vert\lambda\right) & \approx\log P\left(x,\hat{s}\vert\lambda\right)-\frac{1}{2}\log\left(-D\right)
+\end{align*}
+
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial}{\partial\lambda}\log P\left(x\vert\lambda\right) & \approx\frac{\partial}{\partial\lambda}\log P\left(x,\hat{s}\vert\lambda\right)-\frac{1}{2}\frac{1}{D}\frac{\partial D}{\partial\lambda}\\
+\textrm{since by definition }\left.\frac{\partial}{\partial s}\log P\left(x,s\vert\lambda\right)\right|_{\hat{s}} & =0
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This is not simple.
+ But if 
+\begin_inset Formula $\tau_{x}\gg\tau_{s}$
+\end_inset
+
+, then
+\begin_inset Formula 
+\begin{align*}
+\hat{s}^{2} & \approx\frac{x}{\lambda}\\
+\log P\left(x,\hat{s}\vert\lambda\right) & \approx-\frac{1}{2}\left(\tau_{x}x^{2}-2\tau_{x}x\lambda\frac{x}{\lambda}+\tau_{x}\left(\frac{x}{\lambda}\right)^{2}\lambda^{2}+\tau_{s}\frac{x}{\lambda}\right)+C\\
+ & =-\frac{1}{2}\left(\tau_{x}x^{2}-2\tau_{x}x^{2}+\tau_{x}x^{2}+\tau_{s}\frac{x}{\lambda}\right)+C\\
+ & =-\frac{1}{2}\tau_{s}\frac{x}{\lambda}+C
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Let's keep more careful track of terms.
+\begin_inset Formula 
+\begin{align*}
+\hat{s}^{2} & =\frac{x}{\lambda}-\frac{1}{2}\frac{\tau_{s}}{\tau_{x}}\frac{1}{\lambda^{2}}\\
+\hat{s}^{4} & =\frac{x^{2}}{\lambda^{2}}+\frac{1}{4}\left(\frac{\tau_{s}}{\tau_{x}}\right)^{2}\frac{1}{\lambda^{4}}-\frac{\tau_{s}}{\tau_{x}}\frac{x}{\lambda^{3}}\\
+\log P\left(x,\hat{s}\vert\lambda\right) & =-\frac{1}{2}\left(\tau_{x}x^{2}-2\tau_{x}x\lambda\hat{s}^{2}+\tau_{x}\hat{s}^{4}\lambda^{2}+\tau_{s}\hat{s}^{2}\right)\\
+ & =-\frac{1}{2}\left(\tau_{x}x^{2}-2\tau_{x}x^{2}+\tau_{s}x\lambda+\tau_{x}\lambda^{2}\left(\frac{x^{2}}{\lambda^{2}}+\frac{1}{4}\left(\frac{\tau_{s}}{\tau_{x}}\right)^{2}\frac{1}{\lambda^{4}}-\frac{\tau_{s}}{\tau_{x}}\frac{x}{\lambda^{3}}\right)+\tau_{s}\frac{x}{\lambda}-\frac{1}{2}\frac{\tau_{s}^{2}}{\tau_{x}}\frac{1}{\lambda^{2}}\right)\\
+ & =-\frac{1}{2}\left(\tau_{x}x^{2}-2\tau_{x}x^{2}+\tau_{s}x\lambda+\tau_{x}x^{2}+\frac{1}{4}\frac{\tau_{s}^{2}}{\tau_{x}}\frac{1}{\lambda^{2}}-\tau_{s}\frac{x}{\lambda}+\tau_{s}\frac{x}{\lambda}-\frac{1}{2}\frac{\tau_{s}^{2}}{\tau_{x}}\frac{1}{\lambda^{2}}\right)\\
+ & =-\frac{1}{2}\left(\tau_{s}x\lambda+\frac{1}{4}\frac{\tau_{s}}{\tau_{x}}\tau_{s}\frac{1}{\lambda^{2}}-\frac{1}{2}\frac{\tau_{s}}{\tau_{x}}\tau_{s}\frac{1}{\lambda^{2}}\right)\\
+ & \approx-\frac{1}{2}\tau_{s}x\lambda\\
+\frac{\partial}{\partial\lambda}\log P\left(x,\hat{s}\vert\lambda\right) & \approx-\frac{1}{2}\tau_{s}x
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+And
+\begin_inset Formula 
+\begin{align*}
+D & =-4\tau_{x}x\lambda+2\tau_{s}\\
+\frac{1}{D}\frac{\partial D}{\partial\lambda} & =\frac{-4\tau_{x}x}{-4\tau_{x}x\lambda+2\tau_{s}}\\
+ & =\frac{2\tau_{x}x}{2\tau_{x}x\lambda-\tau_{s}}\\
+ & \approx\frac{1}{\lambda}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Thus,
+\begin_inset Formula 
+\begin{align*}
+0 & =-\frac{1}{2}\tau_{s}x+\frac{1}{2\hat{\lambda}}\\
+\tau_{s}x\hat{\lambda} & =1\\
+\hat{\lambda} & =\frac{1}{x\tau_{s}}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+By actually maximizing in closed form, we have
+\begin_inset Formula 
+\begin{align*}
+\frac{\partial}{\partial\lambda}P\left(x\vert\lambda\right) & =\int\frac{\partial}{\partial\lambda}P\left(x,s\vert\lambda\right)ds\\
+ & =\int P\left(x,s\vert\lambda\right)\frac{\partial}{\partial\lambda}\log P\left(x,s\vert\lambda\right)ds\\
+ & =P\left(x\vert\lambda\right)\int P\left(s\vert x,\lambda\right)\frac{\partial}{\partial\lambda}\left(-\frac{1}{2}\left(\tau_{x}x^{2}-2\tau_{x}xs^{2}\lambda+\tau_{x}s^{4}\lambda^{2}+\tau_{s}s^{2}\right)\right)ds\\
+ & =-\frac{1}{2}P\left(x\vert\lambda\right)\int P\left(s\vert x,\lambda\right)\left(-2\tau_{x}xs^{2}+2\tau_{x}s^{4}\lambda\right)ds\\
+\left.\frac{\partial}{\partial\lambda}P\left(x\vert\lambda\right)\right|_{\hat{\lambda}} & =0\Rightarrow\\
+\mbe\left[s^{4}\vert x,\hat{\lambda}\right]\hat{\lambda} & =x\mbe\left[s^{2}\vert x,\hat{\lambda}\right]\Rightarrow\\
+\hat{\lambda} & =x\frac{\mbe\left[s^{2}\vert x,\hat{\lambda}\right]}{\mbe\left[s^{4}\vert x,\hat{\lambda}\right]}\\
+\mbe\left[s^{2}\vert x,\lambda\right] & \approx\hat{s}^{2}-D\\
+ & =\frac{x}{\lambda}-\frac{1}{2}\frac{\tau_{s}}{\tau_{x}}\frac{1}{\lambda^{2}}-\left(-4\tau_{x}x\lambda+2\tau_{s}\right)\\
+ & \approx\frac{x}{\lambda}+4\tau_{x}x\lambda\\
+\mbe\left[s^{4}\vert x,\lambda\right] & =\mbe\left[s\vert x,\lambda\right]^{4}+6\mbe\left[s^{2}\vert x,\lambda\right]\left(-D\right)+3D^{2}\\
+ & =\hat{s}^{4}+6\left(\hat{s}^{2}\right)\left(-D\right)+3D^{2}\\
+ & \approx\frac{x^{4}}{\lambda^{4}}+6\frac{x^{2}}{\lambda^{2}}4\tau_{x}x\lambda+3\cdot4^{2}\tau_{x}^{2}x^{2}\lambda^{2}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+This looks a bit ugly, especially as a function of 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+ However, we can check the other solution, since
+\begin_inset Formula 
+\begin{align*}
+\left.\hat{s}\right|_{\lambda=\hat{\lambda}} & =x^{2}\tau_{s}-\frac{1}{2}\frac{\tau_{s}}{\tau_{x}}x^{2}\tau_{s}^{2}\approx x^{2}\tau_{s}\\
+\left.D\right|_{\lambda=\hat{\lambda}} & =-4\frac{\tau_{x}}{\tau_{s}}+2\tau_{s}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+General case
+\end_layout
+
+\begin_layout Standard
+Suppose we have
+\begin_inset Formula 
+\begin{align*}
+\log P\left(x,s\right) & =-\frac{1}{2}\left(x-Q\left(s\right)\right)^{2}-\frac{1}{2}s^{T}s
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+We want to integrate out 
+\begin_inset Formula $s$
+\end_inset
+
+, that is, to calculate
+\begin_inset Formula 
+\begin{align*}
+\int P\left(x,s\right)ds & =P\left(x\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The difficulty is that 
+\begin_inset Formula $Q\left(s\right)$
+\end_inset
+
+ is non-linear.
+ However, let us assume that 
+\begin_inset Formula $P\left(s\vert x\right)$
+\end_inset
+
+ is approximately quadratic due to the central limit theorem, i.e.
+ that
+\begin_inset Formula 
+\begin{align*}
+\log P\left(s\vert x\right) & \approx-\frac{1}{2}\left(s-\hat{s}\right)^{T}D\left(s-\hat{s}\right)-\frac{1}{2}\log\left|D^{-1}\right|
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Can we use this to calculate the marginal? It seems too good to be true.
+ Let's make it simple, and suppose that for PD matrix 
+\begin_inset Formula $A$
+\end_inset
+
+
+\begin_inset Formula 
+\begin{align*}
+Q\left(s\right) & =s^{T}As
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Old notes
+\end_layout
+
+\begin_layout Standard
+That is, we assume that the conditional posterior of 
+\begin_inset Formula $s$
+\end_inset
+
+ is approximately multivariate Gaussian at the MAP.
+ This may be a plausible assumption if 
+\begin_inset Formula $s$
+\end_inset
+
+ is much lower-dimensional than 
+\begin_inset Formula $d$
+\end_inset
+
+ by the central limit theorem.
+ 
+\end_layout
+
+\begin_layout Standard
+Note that this is 
+\shape italic
+not
+\shape default
+ the same as saying that 
+\begin_inset Formula 
+\begin{align*}
+L\left(s,d\vert\Theta,\lambda\right) & \approx-\frac{1}{2}\left(\hat{s}^{T}S\left(\Theta\right)^{-1}\hat{s}+\left(d-O\left(\hat{s},\lambda\right)\right)N^{-1}\left(d-O\left(\hat{s},\lambda\right)\right)+\left(s-\hat{s}\right)^{T}D\left(s-\hat{s}\right)\right)-\frac{1}{2}\log\left|S\left(\Theta\right)\right|.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+After all, the marginal variance of 
+\begin_inset Formula $s$
+\end_inset
+
+ in 
+\begin_inset Formula $P\left(s\vert d,\theta,\lambda\right)$
+\end_inset
+
+ around is 
+\begin_inset Formula $D$
+\end_inset
+
+, when in the model 
+\begin_inset Formula $P\left(d,s\vert\Theta,\lambda\right)=P\left(d\vert s,\lambda\right)P\left(s\vert\Theta\right)$
+\end_inset
+
+ it is 
+\begin_inset Formula $S$
+\end_inset
+
+.
+ The two are different distributions.
+ Since we do not know 
+\begin_inset Formula $P\left(\Theta\vert d,\lambda\right)$
+\end_inset
+
+ (after all, that's what we're trying to get to by integrating out 
+\begin_inset Formula $s$
+\end_inset
+
+), it does not seem simple to turn 
+\begin_inset Formula $P\left(s\vert d,\Theta,\lambda\right)$
+\end_inset
+
+ into 
+\begin_inset Formula $P\left(s,\Theta\vert d,\lambda\right)$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+P\left(s,\Theta\vert d,\lambda\right) & =P\left(s\vert d,\lambda,\Theta\right)P\left(\Theta\vert d,\lambda\right).
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Consequently, I think equation 4.4 is not correct – you have implicitly change
+ from 
+\begin_inset Formula $P\left(s\vert d,\Theta,\lambda\right)$
+\end_inset
+
+ (eq.
+ 3.1) to 
+\begin_inset Formula $P\left(s,d\vert\Theta,\lambda\right)$
+\end_inset
+
+ without justification.
+ By integrating out 
+\begin_inset Formula $s$
+\end_inset
+
+, in section 4, you are actually calculating 
+\begin_inset Formula $\int P\left(s\vert d,\lambda,\Theta\right)ds=1$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Assuming I'm right, then perhaps you don't notice this because you never
+ actually calculate 
+\begin_inset Formula $D$
+\end_inset
+
+.
+ The real engine that produces inference on 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ is eq.
+ 4.7, where you assume that the likelihood 
+\begin_inset Formula $L\left(\Theta\right)$
+\end_inset
+
+ (whatever its form) is quadratic near the fiducial model, 
+\begin_inset Formula $\Theta_{fid}$
+\end_inset
+
+.
+ Perhaps a simpler way to that assumption, using all the same stuff you
+ already do, is simply to say that you are calculating the joint MLE in
+ 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ and 
+\begin_inset Formula $s$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{align*}
+L\left(\Theta\right) & =\sup_{s}\log P\left(d\vert s,\Theta,\lambda\right)=\log P\left(d\vert\hat{s},\Theta,\lambda\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Again, since you never actually calculate 
+\begin_inset Formula $D$
+\end_inset
+
+, all your inference will be unchanged, but this is now something that you
+ can formally justify.
+ (It is also quite a lot simpler to describe.) It also relies on similar
+ assumptions to the quadratic approximation to 
+\begin_inset Formula $P\left(s\vert d,\Theta,\lambda\right)$
+\end_inset
+
+, namely that there are fewer modes 
+\begin_inset Formula $s$
+\end_inset
+
+ than there is data 
+\begin_inset Formula $d$
+\end_inset
+
+ and that you can apply a central limit theorem.
+\end_layout
+
+\begin_layout Section
+Limited additional notes
+\end_layout
+
+\begin_layout Itemize
+It would be helpful if, at the very beginning in a single section, you say
+ what depends on what.
+ Your observed data is 
+\begin_inset Formula $d$
+\end_inset
+
+, your latent parameters, which you want to integrate out, are 
+\begin_inset Formula $s$
+\end_inset
+
+.
+ The covariance matrix of 
+\begin_inset Formula $s$
+\end_inset
+
+ depends on 
+\begin_inset Formula $\Theta$
+\end_inset
+
+, and the mapping from 
+\begin_inset Formula $s$
+\end_inset
+
+ to 
+\begin_inset Formula $d$
+\end_inset
+
+ depends on 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+ 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ and 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ are your parameters.
+ e.g., 
+\begin_inset Quotes eld
+\end_inset
+
+In statistical language d are the observed variables, 
+\begin_inset Formula $s$
+\end_inset
+
+ are the latent variables and 
+\begin_inset Formula $\lambda$
+\end_inset
+
+ are the parameters.
+\begin_inset Quotes erd
+\end_inset
+
+ – 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ are also parameters.
+\end_layout
+
+\begin_layout Itemize
+I still don't think I understand the reasoning behind eq 2.4.
+ Why are we dividing by 
+\begin_inset Formula $S_{fid}^{2}$
+\end_inset
+
+?
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+Basically, we want to know the parameters 
+\begin_inset Formula $\Theta$
+\end_inset
+
+, and marginalize over the latent variables 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+.
+\begin_inset Quotes erd
+\end_inset
+
+ – I think you want to marginalize over 
+\begin_inset Formula $s$
+\end_inset
+
+, not 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+, as the latter is a parameter of your approximation and the former is a
+ latent variable.
+\end_layout
+
+\begin_layout Itemize
+Equation 4.1: This is the first point where you learn that 
+\begin_inset Formula $S$
+\end_inset
+
+ depends on 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ in some way.
+ Although here you are making it appear quite generic, later in your derivation
+ you assume some fairly specific forms of dependence (e.g.
+ that you can estimate components of 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ by binning 
+\begin_inset Formula $s$
+\end_inset
+
+, as when you later say 
+\begin_inset Quotes eld
+\end_inset
+
+All the matrix operations involve diagonal matrices
+\begin_inset Quotes erd
+\end_inset
+
+).
+ I think it would be nice to be clear up front what kinds of dependence
+ will work with your methods and which won't.
+\end_layout
+
+\begin_layout Itemize
+Around eq 4.1 it starts to get a bit confusing what the order of these tensors
+ are.
+\end_layout
+
+\begin_layout Itemize
+Eq 4.6: Perhaps you could re-iterate here that now 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+ and 
+\begin_inset Formula $D$
+\end_inset
+
+ are both a function of everything: 
+\begin_inset Formula $\Theta$
+\end_inset
+
+, 
+\begin_inset Formula $d$
+\end_inset
+
+, 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+after which the integration over the parameters can be trivially performed.
+\begin_inset Quotes erd
+\end_inset
+
+ – well, there's the determinant of 
+\begin_inset Formula $D$
+\end_inset
+
+, which doesn't seem trivial to calculate.
+\end_layout
+
+\begin_layout Itemize
+It's worth mentioning that, for me at least, 
+\begin_inset Formula $O\left(\cdot\right)$
+\end_inset
+
+ is distracting notation for me.
+ I would typically reserve it for order notation, e.g.
+ to indicate that eq.
+ 4.5 is not actually an equality, but is only true to cubic order.
+\end_layout
+
+\begin_layout Itemize
+Before eq 4.8, there is also dependence on 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+ in 
+\begin_inset Formula $D$
+\end_inset
+
+.
+ (The omission is not particularly consistent; for example, 
+\begin_inset Formula $O\left(\hat{s}\right)$
+\end_inset
+
+ depends on 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ only through 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+, as does 
+\begin_inset Formula $R$
+\end_inset
+
+ which is part of 
+\begin_inset Formula $D$
+\end_inset
+
+, so why mention one and not the other?)
+\end_layout
+
+\begin_layout Itemize
+Eq.
+ 4.13: this may rely on a property of the matrix logarithm that I don't know?
+\end_layout
+
+\begin_layout Itemize
+\begin_inset Quotes eld
+\end_inset
+
+Brackets denote ensemble averaging.
+\begin_inset Quotes erd
+\end_inset
+
+ – it would be helpful at this point to be clear about what exactly you're
+ averaging over.
+ Relatedly, at this point in the analysis, the entire procedure doesn't
+ seem very Bayesian anymore.
+ Since you are also not using priors, I don't think there's anything Bayesian
+ left in the analysis.
+ The whole thing might be clearer if you just call it maximum likelihood
+ (especially in light of the above note about integrating out 
+\begin_inset Formula $s$
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Itemize
+Eq.
+ 4.25: Previously you used 
+\begin_inset Formula $n$
+\end_inset
+
+; now you are using 
+\begin_inset Formula $d_{n}$
+\end_inset
+
+.
+\end_layout
+
+\end_body
+\end_document

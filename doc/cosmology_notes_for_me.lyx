@@ -1,0 +1,729 @@
+#LyX 2.2 created this file. For more info see http://www.lyx.org/
+\lyxformat 508
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Section
+Integrating out 
+\begin_inset Formula $s$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+You have
+\begin_inset Formula 
+\begin{align*}
+P\left(s\vert\Theta\right) & =\mathcal{N}\left(s;0,S\left(\Theta\right)\right)\\
+P\left(d\vert s,\lambda\right) & =\mathcal{N}\left(d;O\left(s,\lambda\right),N\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+From this we have
+\begin_inset Formula 
+\begin{align*}
+L\left(s,d\vert\Theta,\lambda\right) & =-\frac{1}{2}\left(s^{T}S\left(\Theta\right)^{-1}s+\left(d-O\left(s,\lambda\right)\right)N^{-1}\left(d-O\left(s,\lambda\right)\right)\right)-\frac{1}{2}\log\left|S\left(\Theta\right)\right|\\
+L\left(s\vert d,\Theta,\lambda\right) & =-\frac{1}{2}\left(s^{T}S\left(\Theta\right)^{-1}s+\left(d-O\left(s,\lambda\right)\right)N^{-1}\left(d-O\left(s,\lambda\right)\right)\right)-\frac{1}{2}\log\left|S\left(\Theta\right)\right|\\
+ & \approx-\frac{1}{2}\left(\hat{s}^{T}S\left(\Theta\right)^{-1}\hat{s}+\left(d-O\left(\hat{s},\lambda\right)\right)N^{-1}\left(d-O\left(\hat{s},\lambda\right)\right)+\left(s-\hat{s}\right)^{T}D\left(s-\hat{s}\right)\right)-\frac{1}{2}\log\left|S\left(\Theta\right)\right|\\
+\hat{s} & =\mathrm{argmin}_{s}L\left(s\vert d,\Theta,\lambda\right).
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Here, 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+ is a function of 
+\begin_inset Formula $d$
+\end_inset
+
+, 
+\begin_inset Formula $\Theta$
+\end_inset
+
+, and 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+ That is, we assume that the conditional posterior of 
+\begin_inset Formula $s$
+\end_inset
+
+ is approximately multivariate Gaussian at the MAP.
+ This may be a plausible assumption if 
+\begin_inset Formula $s$
+\end_inset
+
+ is much lower-dimensional than 
+\begin_inset Formula $d$
+\end_inset
+
+ by the central limit theorem.
+ Note that this is 
+\shape italic
+not
+\shape default
+ the same as saying that 
+\begin_inset Formula 
+\begin{align*}
+L\left(s,d\vert\Theta,\lambda\right) & \approx-\frac{1}{2}\left(\hat{s}^{T}S\left(\Theta\right)^{-1}\hat{s}+\left(d-O\left(\hat{s},\lambda\right)\right)N^{-1}\left(d-O\left(\hat{s},\lambda\right)\right)+\left(s-\hat{s}\right)^{T}D\left(s-\hat{s}\right)\right)-\frac{1}{2}\log\left|S\left(\Theta\right)\right|.
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+After all, if this were true, the marginal variance of 
+\begin_inset Formula $s$
+\end_inset
+
+ in 
+\begin_inset Formula $P\left(s\vert d,\theta,\lambda\right)$
+\end_inset
+
+ around is 
+\begin_inset Formula $D$
+\end_inset
+
+, when in the model 
+\begin_inset Formula $P\left(d,s\vert\Theta,\lambda\right)=P\left(d\vert s,\lambda\right)P\left(s\vert\Theta\right)$
+\end_inset
+
+ it is 
+\begin_inset Formula $S$
+\end_inset
+
+.
+ Since we do not know 
+\begin_inset Formula $P\left(\Theta\vert d,\lambda\right)$
+\end_inset
+
+ (after all, that's what we're trying to get to by integrating out 
+\begin_inset Formula $s$
+\end_inset
+
+), it does not seem simple to turn 
+\begin_inset Formula $P\left(s\vert d,\Theta,\lambda\right)$
+\end_inset
+
+ into 
+\begin_inset Formula $P\left(s,\Theta\vert d,\lambda\right)$
+\end_inset
+
+:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+P\left(s,\Theta\vert d,\lambda\right) & =P\left(s\vert d,\lambda,\Theta\right)P\left(\Theta\vert d,\lambda\right).
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Consequently, I think equation 4.4 is not correct – you have implicitly change
+ from 
+\begin_inset Formula $P\left(s\vert d,\Theta,\lambda\right)$
+\end_inset
+
+ (eq.
+ 3.1) to 
+\begin_inset Formula $P\left(s,d\vert\Theta,\lambda\right)$
+\end_inset
+
+ without justification.
+ By integrating out 
+\begin_inset Formula $s$
+\end_inset
+
+, in section 4, you are actually calculating 
+\begin_inset Formula $\int P\left(s\vert d,\lambda,\Theta\right)ds=1$
+\end_inset
+
+.
+ 
+\end_layout
+
+\begin_layout Standard
+Perhaps you don't notice this because you never actually calculate 
+\begin_inset Formula $D$
+\end_inset
+
+.
+ The real engine that produces inference on 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ is eq.
+ 4.7, where you assume that the likelihood 
+\begin_inset Formula $L\left(\Theta\right)$
+\end_inset
+
+ (whatever its form) is quadratic near the fiducial model, 
+\begin_inset Formula $\Theta_{fid}$
+\end_inset
+
+.
+ Perhaps a simpler way to that assumption, using all the same stuff you
+ already do, is simply to say that you are calculating the joint MLE in
+ 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ and 
+\begin_inset Formula $s$
+\end_inset
+
+:
+\begin_inset Formula 
+\begin{align*}
+L\left(\Theta\right) & =\sup_{s}\log P\left(d\vert s,\Theta,\lambda\right)=\log P\left(d\vert\hat{s},\Theta,\lambda\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Again, since you never actually calculate 
+\begin_inset Formula $D$
+\end_inset
+
+, all your inference will be unchanged, but this is now something that you
+ can formally justify.
+ It also relies on similar assumptions to the quadratic approximation to
+ 
+\begin_inset Formula $P\left(s\vert d,\Theta,\lambda\right)$
+\end_inset
+
+, namely that there are fewer modes 
+\begin_inset Formula $s$
+\end_inset
+
+ than there is data 
+\begin_inset Formula $d$
+\end_inset
+
+ and that you can apply a central limit theorem.
+\end_layout
+
+\begin_layout Section
+Additional Notes
+\end_layout
+
+\begin_layout Standard
+Observations are
+\begin_inset Formula 
+\begin{align*}
+d & =O\left(s,\lambda\right)+n\\
+n & =\textrm{Gaussian noise}\\
+\lambda & =\textrm{Cosmological parameters}\\
+s & =\textrm{A large number of complex-valued nuisance parameters}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Note that 
+\begin_inset Formula $O\left(s,\lambda\right)$
+\end_inset
+
+ takes a long time to compute.
+ The covariance of the modes is given by 
+\begin_inset Formula $S$
+\end_inset
+
+ and is diagonal:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align*}
+S & =\left\langle s,s^{\dagger}\right\rangle 
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+In turn, 
+\begin_inset Formula $S$
+\end_inset
+
+ depends on 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ (I think).
+\end_layout
+
+\begin_layout Standard
+Note 2.2 is strange notation.
+ It would be more correct to say that 
+\begin_inset Formula $d$
+\end_inset
+
+ only depends on 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ through 
+\begin_inset Formula $s$
+\end_inset
+
+, so that
+\begin_inset Formula 
+\begin{align*}
+d\vert s,\lambda & \sim\mathcal{N}\left(O\left(s,\lambda\right),N\right)\\
+s\vert\Theta & \sim\mathcal{N}\left(0,S\left(\Theta\right)\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Quotes eld
+\end_inset
+
+In statistical language d are the observed variables, s are the latent variables
+ and λ are the parameters.
+\begin_inset Quotes erd
+\end_inset
+
+ – 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ are also parameters.
+\end_layout
+
+\begin_layout Standard
+I still don't think I understand the reasoning behind eq 2.4.
+ Why are we dividing by 
+\begin_inset Formula $S_{fid}^{2}$
+\end_inset
+
+?
+\end_layout
+
+\begin_layout Standard
+Basically, we want to know the parameters Θ, and marginalize over the latent
+ variables 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+.
+ – I think you want to marginalize over 
+\begin_inset Formula $s$
+\end_inset
+
+, not 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+, as the latter is a parameter and the former is a latent variable.
+\end_layout
+
+\begin_layout Standard
+Equation 4.1: 
+\begin_inset Formula $S$
+\end_inset
+
+ depends on 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ in some way I guess.
+\end_layout
+
+\begin_layout Standard
+Around eq 4.1 it starts to get a bit confusing what the order of these tensors
+ are.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Quotes eld
+\end_inset
+
+For concreteness we will initially bin the power spectrum into bins, summing
+ over all the Kl
+\end_layout
+
+\begin_layout Standard
+modes {skl}(kl = 1, ..., Kl), whose mode amplitude contributes to the portion
+ of the power
+\end_layout
+
+\begin_layout Standard
+spectrum parametrized with Θl.
+\begin_inset Quotes erd
+\end_inset
+
+ – Ok, this is more concrete and now I think I know what you're thinking.
+ Since your notation doesn't admit full generality, why not just specify
+ this earlier?
+\end_layout
+
+\begin_layout Standard
+Eq.
+ 4.4: You had previously assumed that 
+\begin_inset Formula $P\left(s\vert d,\Theta\right)$
+\end_inset
+
+ is Gaussian centered at 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+, which depends on 
+\begin_inset Formula $d$
+\end_inset
+
+.
+ It is not obvious (to me at least) that now you can plug in that same approxima
+tion to the joint 
+\begin_inset Formula $P\left(s,d\vert\Theta\right)$
+\end_inset
+
+.
+ After all, you don't know 
+\begin_inset Formula $p\left(d\vert\Theta\right)$
+\end_inset
+
+, right? Furthermore, it's not even necessary, since
+\begin_inset Formula 
+\begin{align*}
+P\left(\Theta\vert d\right) & =\int P\left(\Theta,s\vert d\right)ds
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Eq 4.5: At this point, you are assuming that the high probability area of
+ 
+\begin_inset Formula $O\left(s,\lambda\right)$
+\end_inset
+
+ is linear in 
+\begin_inset Formula $s$
+\end_inset
+
+ as it varies around 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+, but not that 
+\begin_inset Formula $O\left(\hat{s},\lambda\right)$
+\end_inset
+
+ is linear in 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+.
+ Given this, you could perhaps equivalently perform the EM algorithm, which
+ would get rid of the pesky question of whether it matters to have the determina
+nt of 
+\begin_inset Formula $D$
+\end_inset
+
+ sitting around.
+\end_layout
+
+\begin_layout Standard
+Eq 4.6: Now 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+ and 
+\begin_inset Formula $D$
+\end_inset
+
+ are both a function of everything: 
+\begin_inset Formula $\Theta$
+\end_inset
+
+, 
+\begin_inset Formula $d$
+\end_inset
+
+, 
+\begin_inset Formula $\lambda$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Quotes eld
+\end_inset
+
+after which the integration over the parameters can be trivially performed.
+\begin_inset Quotes erd
+\end_inset
+
+ – well, there's the determinant of 
+\begin_inset Formula $D$
+\end_inset
+
+, which doesn't seem trivial to calculate.
+\end_layout
+
+\begin_layout Standard
+You know, 
+\begin_inset Formula $O\left(\cdot\right)$
+\end_inset
+
+ is distracting notation for me.
+ I would typically reserve it for order notation, e.g.
+ to indicate that eq.
+ 4.5 is not actually an equality.
+\end_layout
+
+\begin_layout Standard
+For reference:
+\begin_inset Formula 
+\begin{align*}
+D & =S^{-1}+R^{\dagger}N^{-1}R+O''\left[d-O\left(s_{m}\right)\right]\\
+R & =\frac{\partial O}{\partial s}
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Before eq 4.8, there is also dependence in 
+\begin_inset Formula $D$
+\end_inset
+
+.
+ (The omission is not particularly consistent; for example, 
+\begin_inset Formula $O\left(\hat{s}\right)$
+\end_inset
+
+ depends on 
+\begin_inset Formula $\Theta$
+\end_inset
+
+ only through 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+, as does 
+\begin_inset Formula $R$
+\end_inset
+
+ which is part of 
+\begin_inset Formula $D$
+\end_inset
+
+, so why mention one and not the other?)
+\end_layout
+
+\begin_layout Standard
+Eq.
+ 4.8 NB: eq 3.6 sets the gradient WRT 
+\begin_inset Formula $\hat{s}$
+\end_inset
+
+ to zero.
+ Also NB, you are evaluating at 
+\begin_inset Formula $\Theta_{fid}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Quotes eld
+\end_inset
+
+All the matrix operations involve diagonal matrices,
+\begin_inset Quotes erd
+\end_inset
+
+ – this depends on how you've parameterized 
+\begin_inset Formula $S\left(\Theta\right)$
+\end_inset
+
+, doesn't it?
+\end_layout
+
+\begin_layout Standard
+\begin_inset Quotes eld
+\end_inset
+
+We see that the terms with dsˆ/dΘl cancel out
+\begin_inset Quotes erd
+\end_inset
+
+ – is this the envelope theorem?
+\end_layout
+
+\begin_layout Standard
+Eq.
+ 4.13: this may rely on a property of the matrix logarithm that I don't know?
+\end_layout
+
+\begin_layout Standard
+\begin_inset Quotes eld
+\end_inset
+
+Brackets denote ensemble averaging.
+\begin_inset Quotes erd
+\end_inset
+
+ – it would be nice at this point to be clear about what exactly you're
+ averaging over.
+\end_layout
+
+\begin_layout Standard
+Eq.
+ 4.15: ok, now you're totally frequentist.
+ You may want to abandon the pretense of being Bayesian.
+\end_layout
+
+\begin_layout Standard
+Eq.
+ 4.13: Note that if you did EM, the 
+\begin_inset Formula $\mathbb{E}\left[\delta s^{T}D\delta s\right]$
+\end_inset
+
+ term is constant, but you still have bias due to the log determinant of
+ 
+\begin_inset Formula $S$
+\end_inset
+
+.
+ But that should be tractable.
+ However, 
+\begin_inset Formula $F$
+\end_inset
+
+ may still be intractable.
+\end_layout
+
+\begin_layout Standard
+Eq.
+ 4.25: Previously you used 
+\begin_inset Formula $n$
+\end_inset
+
+; now you are using 
+\begin_inset Formula $d_{n}$
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Section
+Do it for the linear case
+\end_layout
+
+\begin_layout Standard
+where 
+\begin_inset Formula $O\left(s,\lambda\right)=Os$
+\end_inset
+
+.
+\end_layout
+
+\end_body
+\end_document
