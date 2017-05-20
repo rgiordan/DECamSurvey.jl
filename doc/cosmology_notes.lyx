@@ -802,6 +802,28 @@ This looks a bit ugly, especially as a function of
 \end_layout
 
 \begin_layout Section
+Think more clearly please
+\end_layout
+
+\begin_layout Standard
+The question is really whether or not the Taylor expansion provides a good
+ approximation to the marginal distribution.
+ That is, under what circumstances is it true that
+\begin_inset Formula 
+\begin{align*}
+P\left(x\vert\lambda\right) & \approx\frac{1}{\left|D\right|}P\left(x\vert\hat{s},\lambda\right)
+\end{align*}
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\end_layout
+
+\begin_layout Section
 General case
 \end_layout
 
